@@ -298,8 +298,12 @@ def main():
     if output_file.suffix.lower() == ".fbx":
         bpy.ops.export_scene.fbx(
             filepath=str(output_file),
+            path_mode='COPY',
+            embed_textures=True,
             bake_anim=True,
-            bake_anim_use_all_bones=True
+            bake_anim_use_all_bones=True,
+            bake_anim_use_nla_strips=False,
+            bake_anim_use_all_actions=False
         )
 
     print(f"\n[DONE] Saved fully baked animated model to: {output_file}\n")
