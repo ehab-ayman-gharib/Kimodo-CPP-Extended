@@ -272,6 +272,19 @@ def main():
             if act != tgt_arm.animation_data.action:
                 bpy.data.actions.remove(act)
 
+    # 7.5. Fix material transparency settings to prevent see-through / X-ray sorting artifacts in WebGL
+    for mat in bpy.data.materials:
+        if mat and mat.node_tree:
+            bsdf = next((n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+            if bsdf:
+                alpha_sock = bsdf.inputs.get('Alpha')
+                if alpha_sock and alpha_sock.is_linked:
+                    for link in list(alpha_sock.links):
+                        mat.node_tree.links.remove(link)
+                    alpha_sock.default_value = 1.0
+            if hasattr(mat, 'blend_method'):
+                mat.blend_method = 'OPAQUE'
+
     # 8. Export output
     output_file.parent.mkdir(parents=True, exist_ok=True)
     preview_glb = output_file.with_suffix('.glb')

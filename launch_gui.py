@@ -415,6 +415,20 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(items).encode('utf-8'))
+        elif url.startswith("/api/preview_model/download/"):
+            parts = url.strip("/").split("/")
+            if len(parts) == 5:
+                _, _, _, pid, filename = parts
+                target = OUTPUT_DIR / "_preview" / pid / filename
+                if target.is_file():
+                    data = target.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "model/gltf-binary")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+            self.send_error(404)
         elif url.startswith("/api/retarget/download/"):
             parts = url.strip("/").split("/")
             if len(parts) == 5:
@@ -613,6 +627,56 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(ex)}).encode('utf-8'))
+
+        elif path == "/api/preview_model":
+            length = int(self.headers.get("Content-Length", 0))
+            filename = query.get("filename", ["character.fbx"])[0]
+            pid = secrets.token_hex(6)
+            prev_dir = OUTPUT_DIR / "_preview" / pid
+            prev_dir.mkdir(parents=True, exist_ok=True)
+            
+            char_ext = Path(filename).suffix or ".fbx"
+            char_path = prev_dir / f"input_char{char_ext}"
+            with open(char_path, "wb") as f:
+                remaining = length
+                while remaining > 0:
+                    chunk = self.rfile.read(min(65536, remaining))
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    remaining -= len(chunk)
+
+            # Check if matching file exists in workspace to accurately resolve sibling .fbm texture folders
+            ws_file = ROOT_DIR / filename
+            actual_input = ws_file if ws_file.is_file() else char_path
+            
+            out_glb = prev_dir / "preview.glb"
+            blender_exe = find_blender()
+            script_path = ROOT_DIR / "scripts/convert_to_preview_glb.py"
+
+            cmd = [
+                str(blender_exe),
+                "-b",
+                "-P",
+                str(script_path),
+                "--",
+                str(actual_input),
+                str(out_glb),
+            ]
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+            if proc.returncode == 0 and out_glb.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "success",
+                    "preview_url": f"/api/preview_model/download/{pid}/preview.glb"
+                }).encode('utf-8'))
+            else:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": proc.stderr or proc.stdout or "Preview conversion failed"}).encode('utf-8'))
 
         elif path == "/api/open_folder":
             try:

@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kimodo text to motion — AI Motion Generator & 3D Retargeter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
@@ -24,7 +27,11 @@
       --la-violet-2: #7048e8;
       --la-accent-glow: rgba(59, 211, 208, 0.18);
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       overflow: hidden;
@@ -32,12 +39,14 @@
       color: var(--la-text);
       user-select: none;
     }
+
     main {
       width: 100vw;
       height: 100vh;
       display: grid;
       grid-template-columns: 360px minmax(0, 1fr);
     }
+
     .sidebar {
       padding: 14px;
       display: flex;
@@ -50,11 +59,24 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(59, 211, 208, 0.3) rgba(20, 28, 36, 0.5);
     }
-    .sidebar::-webkit-scrollbar { width: 7px; }
-    .sidebar::-webkit-scrollbar-track { background: rgba(13, 18, 24, 0.6); }
-    .sidebar::-webkit-scrollbar-thumb { background: rgba(59, 211, 208, 0.25); border-radius: 4px; }
-    .sidebar::-webkit-scrollbar-thumb:hover { background: var(--la-cyan); }
-    
+
+    .sidebar::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: rgba(13, 18, 24, 0.6);
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(59, 211, 208, 0.25);
+      border-radius: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: var(--la-cyan);
+    }
+
     .eyebrow {
       font-size: 0.68rem;
       text-transform: uppercase;
@@ -66,12 +88,14 @@
       align-items: center;
       gap: 6px;
     }
+
     .product-title {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 0;
     }
+
     .product-mark {
       display: grid;
       place-items: center;
@@ -84,12 +108,14 @@
       font-weight: 900;
       box-shadow: 0 0 20px rgba(59, 211, 208, 0.25);
     }
+
     h1 {
       font-size: 1.4rem;
       letter-spacing: -0.03em;
       margin: 0;
       font-weight: 800;
     }
+
     .card {
       background: var(--la-panel-2);
       border: 1px solid var(--la-line);
@@ -97,17 +123,22 @@
       overflow: visible;
       transition: border-color 0.2s ease;
     }
+
     .promptbox {
       padding: 12px 14px;
       display: grid;
       gap: 8px;
     }
+
     .promptbox label {
       font-weight: 600;
       font-size: 0.82rem;
       color: var(--la-text);
     }
-    textarea, input, select {
+
+    textarea,
+    input,
+    select {
       box-sizing: border-box;
       width: 100%;
       border: 1px solid var(--la-line);
@@ -120,16 +151,22 @@
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    textarea:focus, input:focus, select:focus {
+
+    textarea:focus,
+    input:focus,
+    select:focus {
       border-color: var(--la-cyan);
       box-shadow: 0 0 0 2px rgba(59, 211, 208, 0.15);
     }
+
     .promptbox textarea {
       min-height: 65px;
       resize: none;
       line-height: 1.35;
     }
-    button, .download {
+
+    button,
+    .download {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -147,27 +184,37 @@
       box-shadow: 0 4px 14px rgba(59, 211, 208, 0.14);
       transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     }
-    button:hover:not(:disabled), .download:hover {
+
+    button:hover:not(:disabled),
+    .download:hover {
       filter: brightness(1.08);
       transform: translateY(-1px);
       box-shadow: 0 6px 18px rgba(59, 211, 208, 0.22);
     }
-    button:active:not(:disabled) { transform: translateY(0); }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
     button:disabled {
       opacity: 0.55;
       cursor: wait;
       filter: grayscale(0.5);
     }
+
     .btn-violet {
       background: linear-gradient(135deg, var(--la-violet), var(--la-cyan));
       color: #061118;
       box-shadow: 0 4px 14px rgba(159, 122, 234, 0.18);
     }
-    .readout, .hint {
+
+    .readout,
+    .hint {
       color: var(--la-muted);
       font-size: 0.78rem;
       line-height: 1.3;
     }
+
     .progress {
       display: inline-flex;
       align-items: center;
@@ -175,6 +222,7 @@
       color: var(--la-cyan-2);
       font-weight: 600;
     }
+
     .progress::before {
       content: '';
       width: 8px;
@@ -184,21 +232,27 @@
       box-shadow: 0 0 0 0 var(--la-cyan);
       animation: pulse 1.25s infinite;
     }
+
     @keyframes pulse {
-      70% { box-shadow: 0 0 0 8px rgba(59, 211, 208, 0); }
+      70% {
+        box-shadow: 0 0 0 8px rgba(59, 211, 208, 0);
+      }
     }
+
     .gallery {
       padding: 10px 12px;
       display: grid;
       gap: 6px;
       align-content: start;
     }
+
     .gallery h2 {
       font-size: 0.88rem;
       margin: 2px 2px 4px;
       font-weight: 700;
       color: var(--la-text);
     }
+
     .gallery-scroll-area {
       max-height: 220px;
       overflow-y: auto;
@@ -208,8 +262,16 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(59, 211, 208, 0.25) transparent;
     }
-    .gallery-scroll-area::-webkit-scrollbar { width: 5px; }
-    .gallery-scroll-area::-webkit-scrollbar-thumb { background: rgba(59, 211, 208, 0.2); border-radius: 3px; }
+
+    .gallery-scroll-area::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .gallery-scroll-area::-webkit-scrollbar-thumb {
+      background: rgba(59, 211, 208, 0.2);
+      border-radius: 3px;
+    }
+
     .item {
       width: 100%;
       background: #0b1015;
@@ -224,21 +286,25 @@
       flex-direction: column;
       gap: 3px;
     }
+
     .item:hover {
       border-color: var(--la-cyan);
       background: #111d24;
     }
+
     .item.active {
       border-color: var(--la-cyan);
       background: #11222b;
       box-shadow: 0 0 0 1px var(--la-cyan);
     }
+
     .item p {
       margin: 0;
       font-size: 0.86rem;
       font-weight: 500;
       line-height: 1.35;
     }
+
     .item .meta {
       display: flex;
       align-items: center;
@@ -247,6 +313,7 @@
       font-size: 0.74rem;
       color: var(--la-muted);
     }
+
     .item .badge {
       display: inline-flex;
       align-items: center;
@@ -258,10 +325,12 @@
       font-weight: 600;
       font-size: 0.7rem;
     }
+
     .error {
       color: #ff9292;
       font-size: 0.8rem;
     }
+
     .item-del-btn {
       width: 24px;
       height: 24px;
@@ -279,6 +348,7 @@
       flex-shrink: 0;
       transition: all 0.15s ease;
     }
+
     .item-del-btn:hover {
       background: rgba(255, 60, 60, 0.3) !important;
       color: #ffffff !important;
@@ -294,6 +364,7 @@
       min-width: 0;
       background: #080b0f;
     }
+
     .stage-header {
       padding: 10px 18px;
       background: rgba(13, 18, 24, 0.85);
@@ -305,6 +376,7 @@
       gap: 12px;
       z-index: 10;
     }
+
     .view-mode-tabs {
       display: inline-flex;
       background: #090e13;
@@ -313,6 +385,7 @@
       padding: 3px;
       gap: 3px;
     }
+
     .view-tab {
       display: inline-flex;
       align-items: center;
@@ -328,6 +401,7 @@
       cursor: pointer;
       transition: all 0.15s ease;
     }
+
     .view-tab:hover {
       color: var(--la-text);
       background: rgba(255, 255, 255, 0.05);
@@ -335,11 +409,13 @@
       filter: none;
       box-shadow: none;
     }
+
     .view-tab.active {
       color: #051013;
       background: linear-gradient(135deg, var(--la-cyan), var(--la-cyan-2));
       box-shadow: 0 2px 8px rgba(59, 211, 208, 0.25);
     }
+
     .stage-viewport-area {
       flex: 1;
       display: grid;
@@ -347,21 +423,28 @@
       position: relative;
       background: #080c10;
     }
+
     /* Layout modes */
     .stage-viewport-area.mode-skeleton {
       grid-template-columns: 1fr;
     }
-    .stage-viewport-area.mode-skeleton #meshViewport { display: none; }
-    
+
+    .stage-viewport-area.mode-skeleton #meshViewport {
+      display: none;
+    }
+
     .stage-viewport-area.mode-mesh {
       grid-template-columns: 1fr;
     }
-    .stage-viewport-area.mode-mesh #skeletonViewport { display: none; }
-    
+
+    .stage-viewport-area.mode-mesh #skeletonViewport {
+      display: none;
+    }
+
     .stage-viewport-area.mode-dual {
       grid-template-columns: 1fr 1fr;
     }
-    
+
     .viewport-panel {
       position: relative;
       width: 100%;
@@ -370,15 +453,18 @@
       min-height: 0;
       overflow: hidden;
     }
+
     .viewport-panel:first-child {
       border-right: 1px solid var(--la-line);
     }
+
     .viewport-panel canvas {
       display: block;
       width: 100% !important;
       height: 100% !important;
       outline: none;
     }
+
     .viewport-badge {
       position: absolute;
       top: 14px;
@@ -397,6 +483,7 @@
       pointer-events: none;
       z-index: 5;
     }
+
     .viewport-overlay-placeholder {
       position: absolute;
       inset: 0;
@@ -410,13 +497,14 @@
       text-align: center;
       z-index: 4;
     }
+
     .viewport-overlay-placeholder svg {
       width: 48px;
       height: 48px;
       color: var(--la-violet);
       opacity: 0.85;
     }
-    
+
     /* Controls Bar */
     .controls {
       padding: 12px 18px;
@@ -428,671 +516,782 @@
       flex-wrap: wrap;
       z-index: 10;
     }
+
     .controls input[type="range"] {
       flex: 1;
       min-width: 140px;
       accent-color: var(--la-cyan);
       cursor: pointer;
     }
+
     .localai-logo {
       width: 32px;
       height: 32px;
       object-fit: contain;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
     }
-    
+
     @media (max-width: 900px) {
-      body { overflow: auto; }
-      main { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
-      .stage-container { height: 75vh; }
-      .stage-viewport-area.mode-dual { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+      body {
+        overflow: auto;
+      }
+
+      main {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+
+      .stage-container {
+        height: 75vh;
+      }
+
+      .stage-viewport-area.mode-dual {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
   <script src="/models.js"></script>
 </head>
+
 <body>
-<main>
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <header>
-      <div class="eyebrow">
-        <span>Kimodo-SOMA-RP-v1.1</span> · <span>Vulkan / C++</span>
-      </div>
-      <div class="product-title">
-        <span class="product-mark">K</span>
-        <h1>Text to motion</h1>
-      </div>
-    </header>
+  <main>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <header>
+        <div class="eyebrow">
+          <span>Kimodo-SOMA-RP-v1.1</span> · <span>Vulkan / C++</span>
+        </div>
+        <div class="product-title">
+          <span class="product-mark">K</span>
+          <h1>Text to motion</h1>
+        </div>
+      </header>
 
-    <!-- Generation Box -->
-    <section class="card promptbox">
-      <label for="prompt">Describe a motion</label>
-      <textarea id="prompt">A person runs forward and then leaps over an obstacle in front of them.</textarea>
-      <button id="generate">Generate motion</button>
-      <span id="status" class="readout">Ready</span>
-      <div class="hint">One generation runs at a time. Click any past animation below to inspect or re-bake.</div>
-    </section>
+      <!-- Generation Box -->
+      <section class="card promptbox">
+        <label for="prompt">Describe a motion</label>
+        <textarea id="prompt">A person runs forward and then leaps over an obstacle in front of them.</textarea>
+        <button id="generate">Generate motion</button>
+        <span id="status" class="readout">Ready</span>
+        <div class="hint">One generation runs at a time. Click any past animation below to inspect or re-bake.</div>
+      </section>
 
-    <!-- Custom Character Baker -->
-    <section class="card promptbox" style="gap:10px">
-      <div class="eyebrow" style="color:var(--la-cyan-2);margin-bottom:0">Lens Studio & Unity Rig Baker</div>
-      <label style="font-weight:700;font-size:0.92rem;color:var(--la-text)">Bake to Custom Character Mesh</label>
-      <div class="hint" style="margin-bottom:2px">Upload your character model (.fbx or .glb) to bake the active motion directly onto its rig:</div>
-      
-      <input type="file" id="charFile" accept=".fbx,.glb,.gltf" style="font-size:0.82rem;padding:6px;cursor:pointer">
-      
-      <div style="display:flex;gap:8px">
-        <select id="charFormat" style="flex:1;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem">
-          <option value="glb">GLB (Lens Studio / Web 3D)</option>
-          <option value="fbx">FBX (Unity / Unreal)</option>
-        </select>
-        <button id="bakeBtn" class="btn-violet" style="flex:1.1;padding:7px 12px;font-size:0.82rem">
-          Bake to Mesh
-        </button>
-      </div>
+      <!-- Custom Character Baker -->
+      <section class="card promptbox" style="gap:10px">
+        <div class="eyebrow" style="color:var(--la-cyan-2);margin-bottom:0">Lens Studio & Unity Rig Baker</div>
+        <label style="font-weight:700;font-size:0.92rem;color:var(--la-text)">Bake to Custom Character Mesh</label>
+        <div class="hint" style="margin-bottom:2px">Upload your character model (.fbx or .glb) to bake the active motion
+          directly onto its rig:</div>
 
-      <div id="bakeStatus" class="readout" style="font-size:0.78rem">Select an animation + upload your character.</div>
-      <a id="bakeDownload" class="download" hidden download style="background:linear-gradient(135deg,var(--la-cyan-2),var(--la-cyan));text-align:center;justify-content:center;font-size:0.85rem">
-        Download Baked Model
-      </a>
-    </section>
+        <input type="file" id="charFile" accept=".fbx,.glb,.gltf" style="font-size:0.82rem;padding:6px;cursor:pointer">
 
-    <!-- Gallery -->
-    <section class="card history">
-      <div class="gallery">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 6px">
-          <h2 style="margin:0">Past animations</h2>
-          <button id="openFolderBtn" type="button" title="Open Output Folder in File Explorer" style="padding:4px 9px;font-size:0.75rem;background:#182530;color:var(--la-cyan);border:1px solid var(--la-line);border-radius:6px;box-shadow:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:500">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-            Browse folder
+        <div style="display:flex;gap:8px">
+          <select id="charFormat"
+            style="flex:1;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem">
+            <option value="glb">GLB (Lens Studio / Web 3D)</option>
+            <option value="fbx">FBX (Unity / Unreal)</option>
+          </select>
+          <button id="bakeBtn" class="btn-violet" style="flex:1.1;padding:7px 12px;font-size:0.82rem">
+            Bake to Mesh
           </button>
         </div>
-        <div class="gallery-scroll-area">
-          <div id="items" class="readout">Loading…</div>
+
+        <div id="bakeStatus" class="readout" style="font-size:0.78rem">Select an animation + upload your character.
         </div>
-      </div>
-    </section>
-  </aside>
+        <a id="bakeDownload" class="download" hidden download
+          style="background:linear-gradient(135deg,var(--la-cyan-2),var(--la-cyan));text-align:center;justify-content:center;font-size:0.85rem">
+          Download Baked Model
+        </a>
+      </section>
 
-  <!-- Stage Area -->
-  <section class="stage-container">
-    <!-- Viewport Header & Mode Tabs -->
-    <div class="stage-header">
-      <div class="view-mode-tabs">
-        <button id="tabSkeleton" class="view-tab" title="Show Skeleton Viewer">
-          🦴 Skeleton View
-        </button>
-        <button id="tabDual" class="view-tab active" title="Show Side-by-Side Dual Viewport">
-          ⚡ Dual View
-        </button>
-        <button id="tabMesh" class="view-tab" title="Show 3D Character Mesh Viewer">
-          👤 3D Character View
-        </button>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:10px">
-        <span id="characterBadge" class="badge" style="display:none;padding:4px 8px;border-radius:6px;background:rgba(159,122,234,0.15);color:var(--la-violet);font-size:0.75rem;font-weight:600">
-          No Character Baked
-        </span>
-        <img class="localai-logo" src="/localai.png" alt="LocalAI">
-      </div>
-    </div>
-
-    <!-- Dual Viewport Area -->
-    <div id="stageArea" class="stage-viewport-area mode-dual">
-      <!-- 1. Skeleton 2D/3D Canvas Viewport -->
-      <div id="skeletonViewport" class="viewport-panel">
-        <span class="viewport-badge">🦴 Kimodo Skeleton</span>
-        <canvas id="view" width="1280" height="720" aria-label="Animated Skeleton"></canvas>
-      </div>
-
-      <!-- 2. Retargeted 3D Mesh Three.js Viewport -->
-      <div id="meshViewport" class="viewport-panel">
-        <span id="meshBadge" class="viewport-badge">👤 Retargeted 3D Mesh</span>
-        
-        <!-- Active Clip Switcher Dropdown -->
-        <div id="clipControl" style="display:none;align-items:center;gap:6px;position:absolute;top:14px;right:14px;z-index:10;background:rgba(13,18,24,0.9);backdrop-filter:blur(8px);border:1px solid var(--la-line);padding:3px 8px;border-radius:6px;">
-          <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2)">Active Clip:</span>
-          <select id="clipSelect" style="padding:2px 6px;font-size:0.75rem;border:0;background:transparent;color:var(--la-text);cursor:pointer;outline:none;"></select>
-        </div>
-
-        <!-- Placeholder Overlay when no character baked -->
-        <div id="meshPlaceholder" class="viewport-overlay-placeholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2a5 5 0 0 1 5 5v2a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"></path>
-            <path d="M19 21v-2a7 7 0 0 0-14 0v2"></path>
-          </svg>
-          <div style="font-weight:700;font-size:1.05rem;color:var(--la-text)">No 3D Character Loaded</div>
-          <div style="font-size:0.82rem;color:var(--la-muted);max-width:280px">
-            Upload your .fbx / .glb model on the left and click <b>Bake to Mesh</b> to preview it here in real-time 3D!
+      <!-- Gallery -->
+      <section class="card history">
+        <div class="gallery">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 6px">
+            <h2 style="margin:0">Past animations</h2>
+            <button id="openFolderBtn" type="button" title="Open Output Folder in File Explorer"
+              style="padding:4px 9px;font-size:0.75rem;background:#182530;color:var(--la-cyan);border:1px solid var(--la-line);border-radius:6px;box-shadow:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-weight:500">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              Browse folder
+            </button>
+          </div>
+          <div class="gallery-scroll-area">
+            <div id="items" class="readout">Loading…</div>
           </div>
         </div>
+      </section>
+    </aside>
 
-        <div id="threeContainer" style="width:100%;height:100%"></div>
+    <!-- Stage Area -->
+    <section class="stage-container">
+      <!-- Viewport Header & Mode Tabs -->
+      <div class="stage-header">
+        <div class="view-mode-tabs">
+          <button id="tabSkeleton" class="view-tab" title="Show Skeleton Viewer">
+            🦴 Skeleton View
+          </button>
+          <button id="tabDual" class="view-tab active" title="Show Side-by-Side Dual Viewport">
+            ⚡ Dual View
+          </button>
+          <button id="tabMesh" class="view-tab" title="Show 3D Character Mesh Viewer">
+            👤 3D Character View
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="characterBadge" class="badge"
+            style="display:none;padding:4px 8px;border-radius:6px;background:rgba(159,122,234,0.15);color:var(--la-violet);font-size:0.75rem;font-weight:600">
+            No Character Baked
+          </span>
+          <img class="localai-logo" src="/localai.png" alt="LocalAI">
+        </div>
       </div>
-    </div>
 
-    <!-- Playback Controls -->
-    <div class="controls">
-      <button id="play" style="padding:8px 16px">Pause</button>
-      <button id="reset" style="background:#17222c;color:var(--la-text);padding:8px 14px">Reset view</button>
-      <a id="download" class="download" hidden download style="padding:8px 14px;font-size:0.82rem">Download Standard GLB</a>
-      <a id="downloadMixamo" class="download" hidden download style="background:linear-gradient(135deg,var(--la-violet),var(--la-cyan));padding:8px 14px;font-size:0.82rem">Download Mixamo GLB</a>
-      <input id="frame" type="range" min="0" value="0" step="1">
-      <span id="frameText" class="readout" style="min-width:110px;font-family:'JetBrains Mono',monospace"></span>
-      <span class="hint" style="font-size:0.75rem">Drag: Orbit · Wheel: Zoom · Shift/Right-drag: Pan</span>
-    </div>
-  </section>
-</main>
+      <!-- Dual Viewport Area -->
+      <div id="stageArea" class="stage-viewport-area mode-dual">
+        <!-- 1. Skeleton 2D/3D Canvas Viewport -->
+        <div id="skeletonViewport" class="viewport-panel">
+          <span class="viewport-badge">🦴 Kimodo Skeleton</span>
+          <canvas id="view" width="1280" height="720" aria-label="Animated Skeleton"></canvas>
+        </div>
 
-<!-- Output Files Browser Modal -->
-<div id="outputFolderModal" style="display:none;position:fixed;inset:0;background:rgba(4,7,10,0.8);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#0d131a;border:1px solid var(--la-line);border-radius:12px;width:100%;max-width:680px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,0.7);overflow:hidden">
-    <!-- Modal Header -->
-    <div style="padding:14px 18px;border-bottom:1px solid var(--la-line);display:flex;align-items:center;justify-content:space-between;background:rgba(20,28,38,0.5)">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:1.1rem">📂</span>
-        <h3 style="margin:0;font-size:1.0rem;font-weight:700;color:var(--la-text)">Output Files Browser</h3>
+        <!-- 2. Retargeted 3D Mesh Three.js Viewport -->
+        <div id="meshViewport" class="viewport-panel">
+          <span id="meshBadge" class="viewport-badge">👤 Retargeted 3D Mesh</span>
+
+          <!-- Active Clip Switcher Dropdown -->
+          <div id="clipControl"
+            style="display:none;align-items:center;gap:6px;position:absolute;top:14px;right:14px;z-index:10;background:rgba(13,18,24,0.9);backdrop-filter:blur(8px);border:1px solid var(--la-line);padding:3px 8px;border-radius:6px;">
+            <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2)">Active Clip:</span>
+            <select id="clipSelect"
+              style="padding:2px 6px;font-size:0.75rem;border:0;background:transparent;color:var(--la-text);cursor:pointer;outline:none;"></select>
+          </div>
+
+          <!-- Placeholder Overlay when no character baked -->
+          <div id="meshPlaceholder" class="viewport-overlay-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2a5 5 0 0 1 5 5v2a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"></path>
+              <path d="M19 21v-2a7 7 0 0 0-14 0v2"></path>
+            </svg>
+            <div style="font-weight:700;font-size:1.05rem;color:var(--la-text)">No 3D Character Loaded</div>
+            <div style="font-size:0.82rem;color:var(--la-muted);max-width:280px">
+              Upload your .fbx / .glb model on the left and click <b>Bake to Mesh</b> to preview it here in real-time
+              3D!
+            </div>
+          </div>
+
+          <div id="threeContainer" style="width:100%;height:100%"></div>
+        </div>
       </div>
-      <button id="closeFolderModal" type="button" style="background:transparent;border:0;color:var(--la-muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 8px;border-radius:6px;box-shadow:none">✕</button>
-    </div>
 
-    <!-- Path Bar with 1-click Copy -->
-    <div style="padding:10px 18px;background:#090d12;border-bottom:1px solid var(--la-line);display:flex;align-items:center;gap:10px">
-      <span style="font-size:0.75rem;font-weight:600;color:var(--la-muted)">Directory:</span>
-      <code id="modalDirPath" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--la-cyan);background:rgba(59,211,208,0.08);padding:4px 8px;border-radius:6px;border:1px solid rgba(59,211,208,0.2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">e:\Kimodo-CPP\demo-output</code>
-      <button id="copyPathBtn" type="button" style="padding:4px 10px;font-size:0.75rem;background:#17222c;color:var(--la-text);border:1px solid var(--la-line);border-radius:6px;cursor:pointer;white-space:nowrap">📋 Copy</button>
-    </div>
+      <!-- Playback Controls -->
+      <div class="controls">
+        <button id="play" style="padding:8px 16px">Pause</button>
+        <button id="reset" style="background:#17222c;color:var(--la-text);padding:8px 14px">Reset view</button>
+        <a id="download" class="download" hidden download style="padding:8px 14px;font-size:0.82rem">Download Standard
+          GLB</a>
+        <a id="downloadMixamo" class="download" hidden download
+          style="background:linear-gradient(135deg,var(--la-violet),var(--la-cyan));padding:8px 14px;font-size:0.82rem">Download
+          Mixamo GLB</a>
+        <input id="frame" type="range" min="0" value="0" step="1">
+        <span id="frameText" class="readout" style="min-width:110px;font-family:'JetBrains Mono',monospace"></span>
+        <span class="hint" style="font-size:0.75rem">Drag: Orbit · Wheel: Zoom · Shift/Right-drag: Pan</span>
+      </div>
+    </section>
+  </main>
 
-    <!-- Folder Contents List -->
-    <div id="modalFolderList" style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px">
-      <div style="color:var(--la-muted);font-size:0.85rem">Loading output files…</div>
+  <!-- Output Files Browser Modal -->
+  <div id="outputFolderModal"
+    style="display:none;position:fixed;inset:0;background:rgba(4,7,10,0.8);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div
+      style="background:#0d131a;border:1px solid var(--la-line);border-radius:12px;width:100%;max-width:680px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,0.7);overflow:hidden">
+      <!-- Modal Header -->
+      <div
+        style="padding:14px 18px;border-bottom:1px solid var(--la-line);display:flex;align-items:center;justify-content:space-between;background:rgba(20,28,38,0.5)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.1rem">📂</span>
+          <h3 style="margin:0;font-size:1.0rem;font-weight:700;color:var(--la-text)">Output Files Browser</h3>
+        </div>
+        <button id="closeFolderModal" type="button"
+          style="background:transparent;border:0;color:var(--la-muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 8px;border-radius:6px;box-shadow:none">✕</button>
+      </div>
+
+      <!-- Path Bar with 1-click Copy -->
+      <div
+        style="padding:10px 18px;background:#090d12;border-bottom:1px solid var(--la-line);display:flex;align-items:center;gap:10px">
+        <span style="font-size:0.75rem;font-weight:600;color:var(--la-muted)">Directory:</span>
+        <code id="modalDirPath"
+          style="flex:1;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--la-cyan);background:rgba(59,211,208,0.08);padding:4px 8px;border-radius:6px;border:1px solid rgba(59,211,208,0.2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">e:\Kimodo-CPP\demo-output</code>
+        <button id="copyPathBtn" type="button"
+          style="padding:4px 10px;font-size:0.75rem;background:#17222c;color:var(--la-text);border:1px solid var(--la-line);border-radius:6px;cursor:pointer;white-space:nowrap">📋
+          Copy</button>
+      </div>
+
+      <!-- Folder Contents List -->
+      <div id="modalFolderList"
+        style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px">
+        <div style="color:var(--la-muted);font-size:0.85rem">Loading output files…</div>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-// --- SKELETON 2D PROJECTED VIEWER ---
-let parents = [-1,0,0,0,1,2,3,4,5,6,7,8,9,9,9,12,13,14,16,17,18,19];
-let offsets = [[0,0,0],[.052299,-.093936,-.027607],[-.057193,-.106548,-.022218],[-.001496,.11293,-.024981],[.058867,-.416442,-.006557],[-.048074,-.39756,-.014061],[.0069,.145636,-.006859],[-.041738,-.437584,-.029512],[.014489,-.446853,-.01803],[-.010334,.056082,.021116],[.049294,-.065279,.126259],[-.040575,-.065287,.127076],[-.011026,.171365,-.028827],[.047725,.087643,-.008375],[-.046636,.086612,-.014864],[.024654,.175391,.024463],[.126285,.05768,-.013885],[-.109342,.053674,-.009118],[.272907,-.069853,-.039094],[-.292029,-.03544,-.024565],[.276174,.021254,-.002478],[-.271878,-.004835,-.016445]];
+  <script>
+    // --- SKELETON 2D PROJECTED VIEWER ---
+    let parents = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19];
+    let offsets = [[0, 0, 0], [.052299, -.093936, -.027607], [-.057193, -.106548, -.022218], [-.001496, .11293, -.024981], [.058867, -.416442, -.006557], [-.048074, -.39756, -.014061], [.0069, .145636, -.006859], [-.041738, -.437584, -.029512], [.014489, -.446853, -.01803], [-.010334, .056082, .021116], [.049294, -.065279, .126259], [-.040575, -.065287, .127076], [-.011026, .171365, -.028827], [.047725, .087643, -.008375], [-.046636, .086612, -.014864], [.024654, .175391, .024463], [.126285, .05768, -.013885], [-.109342, .053674, -.009118], [.272907, -.069853, -.039094], [-.292029, -.03544, -.024565], [.276174, .021254, -.002478], [-.271878, -.004835, -.016445]];
 
-window.addEventListener('kimodo:restore-sequence', event => {
-  const id = event.detail?.model || 'soma-rp-v1.1';
-  const model = window.kimodoModels?.find(item => item.id === id);
-  if (model?.parents?.length && model.offsets?.length === model.parents.length) {
-    parents = model.parents;
-    offsets = model.offsets;
-  }
-});
-
-const canvas = document.querySelector('#view');
-const ctx = canvas.getContext('2d');
-const slider = document.querySelector('#frame');
-const promptBox = document.querySelector('#prompt');
-const generate = document.querySelector('#generate');
-const status = document.querySelector('#status');
-const items = document.querySelector('#items');
-const download = document.querySelector('#download');
-const downloadMixamo = document.querySelector('#downloadMixamo');
-
-let selected, root, rotations, frame = 0, playbackBlend = 0, playing = true, last = 0, cameraLast = 0, animations = [], activeRequest, activeStarted;
-const defaultView = { yaw: -0.68, pitch: -0.20, zoom: 2700, panX: 0, panY: 0, cameraX: 0, cameraZ: 0, cameraZoom: 2700, cameraSpeed: 0 };
-const view = { ...defaultView };
-
-function renderedRoot() {
-  if (!selected || !root) return [0, 0, 0];
-  const at = frame * 3, next = ((frame + 1) % selected.frames) * 3, b = playbackBlend;
-  return [
-    root[at] * (1 - b) + root[next] * b,
-    root[at + 1] * (1 - b) + root[next + 1] * b,
-    root[at + 2] * (1 - b) + root[next + 2] * b
-  ];
-}
-
-function snapCamera() {
-  const [x, , z] = renderedRoot();
-  view.cameraX = x;
-  view.cameraZ = z;
-  view.cameraZoom = view.zoom;
-  view.cameraSpeed = 0;
-  cameraLast = performance.now();
-}
-
-function reset() {
-  Object.assign(view, defaultView);
-  snapCamera();
-  if (threeControls) {
-    threeControls.reset();
-    threeCamera.position.set(0, 1.4, 3.2);
-    threeControls.target.set(0, 0.9, 0);
-  }
-  draw();
-}
-
-function updateCamera(now) {
-  if (!selected || !root) return;
-  const dt = Math.min(0.1, Math.max(0, (now - cameraLast) / 1000));
-  cameraLast = now;
-  const at = frame * 3, next = ((frame + 1) % selected.frames) * 3;
-  const [rootX, , rootZ] = renderedRoot();
-  const speed = playing ? Math.hypot(root[next] - root[at], root[next + 2] - root[at + 2]) * 30 : 0;
-  const dx = rootX - view.cameraX, dz = rootZ - view.cameraZ;
-  const distance = Math.hypot(dx, dz), deadZone = 0.18;
-  const targetX = distance > deadZone ? rootX - dx / distance * deadZone : view.cameraX;
-  const targetZ = distance > deadZone ? rootZ - dz / distance * deadZone : view.cameraZ;
-  const follow = 1 - Math.exp(-3 * dt), speedFollow = 1 - Math.exp(-2.4 * dt), zoomFollow = 1 - Math.exp(-2.6 * dt);
-  view.cameraSpeed += (speed - view.cameraSpeed) * speedFollow;
-  const targetZoom = view.zoom * (1 - Math.min(0.22, view.cameraSpeed * 0.035));
-  view.cameraX += (targetX - view.cameraX) * follow;
-  view.cameraZ += (targetZ - view.cameraZ) * follow;
-  view.cameraZoom += (targetZoom - view.cameraZoom) * zoomFollow;
-}
-
-function rotate(q, v) {
-  const [x, y, z, w] = q, [vx, vy, vz] = v;
-  const tx = 2 * (y * vz - z * vy), ty = 2 * (z * vx - x * vz), tz = 2 * (x * vy - y * vx);
-  return [vx + w * tx + y * tz - z * ty, vy + w * ty + z * tx - x * tz, vz + w * tz + x * ty - y * tx];
-}
-
-function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
-function multiply(a, b) {
-  const [x, y, z, w] = a, [X, Y, Z, W] = b;
-  return [
-    x * W + w * X + y * Z - z * Y,
-    y * W + w * Y + z * X - x * Z,
-    z * W + w * Z + x * Y - y * X,
-    w * W - x * X - y * Y - z * Z
-  ];
-}
-
-function pose() {
-  if (!selected || !root || !rotations) return [];
-  const positions = [], global = [], rootPosition = renderedRoot(), joints = parents.length;
-  for (let j = 0; j < joints; j++) {
-    const q = Array.from(rotations.subarray((frame * joints + j) * 4, (frame * joints + j + 1) * 4));
-    const p = parents[j];
-    if (p < 0) {
-      global[j] = q;
-      positions[j] = rootPosition;
-    } else {
-      global[j] = multiply(global[p], q);
-      positions[j] = add(positions[p], rotate(global[p], offsets[j]));
-    }
-  }
-  return positions;
-}
-
-function project([x, y, z]) {
-  x -= view.cameraX;
-  z -= view.cameraZ;
-  const rx = x * Math.cos(view.yaw) - z * Math.sin(view.yaw);
-  const rz = x * Math.sin(view.yaw) + z * Math.cos(view.yaw);
-  const ry = y * Math.cos(view.pitch) - rz * Math.sin(view.pitch);
-  const dz = y * Math.sin(view.pitch) + rz * Math.cos(view.pitch) + 8;
-  return [
-    canvas.width / 2 + view.panX + view.cameraZoom * rx / dz,
-    canvas.height * 0.78 + view.panY - view.cameraZoom * ry / dz
-  ];
-}
-
-function ground() {
-  const cx = 0, cz = 0, step = 0.5, initialExtent = 6;
-  const drawGrid = (extent, alpha, colour, width) => {
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = width;
-    for (let i = -extent / step; i <= extent / step; i++) {
-      let a = project([cx - extent, 0, cz + i * step]), b = project([cx + extent, 0, cz + i * step]);
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
-      a = project([cx + i * step, 0, cz - extent]); b = project([cx + i * step, 0, cz + extent]);
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
-    }
-  };
-  const [x, , z] = renderedRoot();
-  const rootDistance = Math.max(Math.abs(x), Math.abs(z));
-  const outerAlpha = 0.72 * Math.max(0, Math.min(1, (rootDistance - 3.5) / 2.5));
-  if (outerAlpha) drawGrid(18, outerAlpha, '#173943', 1);
-  drawGrid(initialExtent, 1, '#173943', 2);
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = '#23606b';
-  ctx.lineWidth = 3;
-  const xAxis = project([cx - initialExtent, 0, cz]), xEnd = project([cx + initialExtent, 0, cz]);
-  const zAxis = project([cx, 0, cz - initialExtent]), zEnd = project([cx, 0, cz + initialExtent]);
-  ctx.beginPath(); ctx.moveTo(xAxis[0], xAxis[1]); ctx.lineTo(xEnd[0], xEnd[1]);
-  ctx.moveTo(zAxis[0], zAxis[1]); ctx.lineTo(zEnd[0], zEnd[1]); ctx.stroke();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const p = pose();
-  ground();
-  if (p.length) {
-    ctx.lineCap = 'round';
-    for (let pass = 0; pass < 2; pass++) {
-      ctx.strokeStyle = pass ? '#65eee1' : '#071014';
-      ctx.lineWidth = pass ? 7 : 13;
-      for (let i = 1; i < parents.length; i++) {
-        const a = project(p[i]), b = project(p[parents[i]]);
-        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    async function ensureModelsLoaded() {
+      if (!window.kimodoModels || !window.kimodoModels.length) {
+        try {
+          window.kimodoModels = await fetch('/api/models').then(r => r.json());
+        } catch (e) {
+          console.warn("Failed to prefetch models:", e);
+        }
       }
+      return window.kimodoModels;
     }
-    for (const x of p) {
-      const a = project(x);
-      ctx.fillStyle = '#071014'; ctx.beginPath(); ctx.arc(a[0], a[1], 7, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ecfffd'; ctx.beginPath(); ctx.arc(a[0], a[1], 4, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-  slider.value = frame;
-  document.querySelector('#frameText').textContent = selected ? `frame ${frame + 1} / ${selected.frames}` : 'No animation';
-  
-  // Sync 3D Mesh Character animation pose
-  if (threeMixer) {
-    threeMixer.setTime(frame / 30.0);
-  }
-}
 
-function tick(t) {
-  if (selected) {
-    const interval = 1000 / 30;
-    if (!last) last = t;
-    if (playing) {
-      while (t - last >= interval) {
-        frame = (frame + 1) % selected.frames;
-        last += interval;
+    function applySkeletonModel(modelId = 'soma-rp-v1.1') {
+      const model = window.kimodoModels?.find(item => item.id === modelId);
+      if (model?.parents?.length && model.offsets?.length === model.parents.length) {
+        parents = model.parents;
+        offsets = model.offsets;
+        return true;
       }
-      playbackBlend = Math.min(1, (t - last) / interval);
-    } else {
-      playbackBlend = 0;
+      return false;
     }
-    updateCamera(t);
-    draw();
-    if (threeMixer) {
-      threeMixer.setTime((frame + playbackBlend) / 30.0);
+
+    window.addEventListener('kimodo:restore-sequence', event => {
+      const id = event.detail?.model || 'soma-rp-v1.1';
+      applySkeletonModel(id);
+    });
+
+    const canvas = document.querySelector('#view');
+    const ctx = canvas.getContext('2d');
+    const slider = document.querySelector('#frame');
+    const promptBox = document.querySelector('#prompt');
+    const generate = document.querySelector('#generate');
+    const status = document.querySelector('#status');
+    const items = document.querySelector('#items');
+    const download = document.querySelector('#download');
+    const downloadMixamo = document.querySelector('#downloadMixamo');
+
+    let selected, root, rotations, frame = 0, playbackBlend = 0, playing = true, last = 0, cameraLast = 0, animations = [], activeRequest, activeStarted;
+    const defaultView = { yaw: -0.68, pitch: -0.20, zoom: 2700, panX: 0, panY: 0, cameraX: 0, cameraZ: 0, cameraZoom: 2700, cameraSpeed: 0 };
+    const view = { ...defaultView };
+
+    function renderedRoot() {
+      if (!selected || !root) return [0, 0, 0];
+      const at = frame * 3, next = ((frame + 1) % selected.frames) * 3, b = playbackBlend;
+      return [
+        root[at] * (1 - b) + root[next] * b,
+        root[at + 1] * (1 - b) + root[next + 1] * b,
+        root[at + 2] * (1 - b) + root[next + 2] * b
+      ];
     }
-  }
-  if (threeControls) {
-    threeControls.update();
-  }
-  if (threeRenderer && threeScene && threeCamera) {
-    threeRenderer.render(threeScene, threeCamera);
-  }
-  requestAnimationFrame(tick);
-}
 
-// --- 3D CHARACTER RETARGETED MESH (THREE.JS) ---
-let threeScene, threeCamera, threeRenderer, threeControls, threeMixer, currentAction, currentGltfClips = [];
-let currentCharacterModel;
-const threeContainer = document.querySelector('#threeContainer');
-const meshPlaceholder = document.querySelector('#meshPlaceholder');
-const meshBadge = document.querySelector('#meshBadge');
-const characterBadge = document.querySelector('#characterBadge');
-const clipControl = document.querySelector('#clipControl');
-const clipSelect = document.querySelector('#clipSelect');
+    function snapCamera() {
+      const [x, , z] = renderedRoot();
+      view.cameraX = x;
+      view.cameraZ = z;
+      view.cameraZoom = view.zoom;
+      view.cameraSpeed = 0;
+      cameraLast = performance.now();
+    }
 
-function playClipByIndex(idx) {
-  if (!threeMixer || !currentGltfClips[idx]) return;
-  if (currentAction) {
-    currentAction.stop();
-  }
-  currentAction = threeMixer.clipAction(currentGltfClips[idx]);
-  currentAction.reset().play();
-  threeMixer.setTime(frame / 30.0);
-  clipSelect.value = idx;
-  console.log(`[3D Viewport] Active Clip [${idx}]: "${currentGltfClips[idx].name}" (${currentGltfClips[idx].duration.toFixed(2)}s)`);
-}
-
-clipSelect.onchange = e => {
-  playClipByIndex(Number(e.target.value));
-};
-
-function initThreeViewer() {
-  if (!window.THREE) return;
-  threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color(0x090e13);
-
-  const rect = threeContainer.getBoundingClientRect();
-  const w = rect.width || 600, h = rect.height || 400;
-
-  threeCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-  threeCamera.position.set(0, 1.4, 3.2);
-
-  threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  threeRenderer.setSize(w, h);
-  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  threeRenderer.shadowMap.enabled = true;
-  threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  threeRenderer.outputEncoding = THREE.sRGBEncoding;
-  threeContainer.appendChild(threeRenderer.domElement);
-
-  threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
-  threeControls.enableDamping = true;
-  threeControls.dampingFactor = 0.05;
-  threeControls.target.set(0, 0.9, 0);
-
-  // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-  threeScene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
-  dirLight.position.set(3, 6, 4);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  threeScene.add(dirLight);
-
-  const fillLight = new THREE.DirectionalLight(0x3bd3d0, 0.6);
-  fillLight.position.set(-3, 2, -2);
-  threeScene.add(fillLight);
-
-  const rimLight = new THREE.DirectionalLight(0x9f7aea, 0.8);
-  rimLight.position.set(0, 4, -4);
-  threeScene.add(rimLight);
-
-  // Ground Grid
-  const gridHelper = new THREE.GridHelper(20, 20, 0x3bd3d0, 0x1a2632);
-  gridHelper.position.y = 0;
-  threeScene.add(gridHelper);
-
-  window.addEventListener('resize', onThreeResize);
-}
-
-function onThreeResize() {
-  if (!threeRenderer || !threeCamera) return;
-  const rect = threeContainer.getBoundingClientRect();
-  if (rect.width && rect.height) {
-    threeCamera.aspect = rect.width / rect.height;
-    threeCamera.updateProjectionMatrix();
-    threeRenderer.setSize(rect.width, rect.height);
-  }
-}
-
-async function loadRetargetedModel(glbUrl, charName = "Character") {
-  if (!window.THREE || !window.THREE.GLTFLoader) return;
-  meshPlaceholder.style.display = 'none';
-  meshBadge.textContent = `⏳ Loading ${charName}…`;
-  characterBadge.style.display = 'inline-flex';
-  characterBadge.textContent = `⏳ Loading ${charName}…`;
-
-  const loader = new THREE.GLTFLoader();
-  if (window.THREE.DRACOLoader) {
-    const draco = new THREE.DRACOLoader();
-    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-    loader.setDRACOLoader(draco);
-  }
-
-  loader.load(
-    glbUrl,
-    gltf => {
-      if (currentCharacterModel) {
-        threeScene.remove(currentCharacterModel);
+    function reset() {
+      Object.assign(view, defaultView);
+      snapCamera();
+      if (threeControls) {
+        threeControls.reset();
+        threeCamera.position.set(0, 1.4, 3.2);
+        threeControls.target.set(0, 0.9, 0);
       }
-      currentCharacterModel = gltf.scene;
-      meshBadge.textContent = `👤 ${charName}`;
-      characterBadge.textContent = `👤 ${charName}`;
+      draw();
+    }
 
-      // Enable shadows & materials
-      currentCharacterModel.traverse(node => {
-        if (node.isMesh) {
-          node.castShadow = true;
-          node.receiveShadow = true;
-          if (node.material) {
-            node.material.roughness = 0.5;
-            node.material.metalness = 0.1;
+    function updateCamera(now) {
+      if (!selected || !root) return;
+      const dt = Math.min(0.1, Math.max(0, (now - cameraLast) / 1000));
+      cameraLast = now;
+      const at = frame * 3, next = ((frame + 1) % selected.frames) * 3;
+      const [rootX, , rootZ] = renderedRoot();
+      const speed = playing ? Math.hypot(root[next] - root[at], root[next + 2] - root[at + 2]) * 30 : 0;
+      const dx = rootX - view.cameraX, dz = rootZ - view.cameraZ;
+      const distance = Math.hypot(dx, dz), deadZone = 0.18;
+      const targetX = distance > deadZone ? rootX - dx / distance * deadZone : view.cameraX;
+      const targetZ = distance > deadZone ? rootZ - dz / distance * deadZone : view.cameraZ;
+      const follow = 1 - Math.exp(-3 * dt), speedFollow = 1 - Math.exp(-2.4 * dt), zoomFollow = 1 - Math.exp(-2.6 * dt);
+      view.cameraSpeed += (speed - view.cameraSpeed) * speedFollow;
+      const targetZoom = view.zoom * (1 - Math.min(0.22, view.cameraSpeed * 0.035));
+      view.cameraX += (targetX - view.cameraX) * follow;
+      view.cameraZ += (targetZ - view.cameraZ) * follow;
+      view.cameraZoom += (targetZoom - view.cameraZoom) * zoomFollow;
+    }
+
+    function rotate(q, v) {
+      const [x, y, z, w] = q, [vx, vy, vz] = v;
+      const tx = 2 * (y * vz - z * vy), ty = 2 * (z * vx - x * vz), tz = 2 * (x * vy - y * vx);
+      return [vx + w * tx + y * tz - z * ty, vy + w * ty + z * tx - x * tz, vz + w * tz + x * ty - y * tx];
+    }
+
+    function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+    function multiply(a, b) {
+      const [x, y, z, w] = a, [X, Y, Z, W] = b;
+      return [
+        x * W + w * X + y * Z - z * Y,
+        y * W + w * Y + z * X - x * Z,
+        z * W + w * Z + x * Y - y * X,
+        w * W - x * X - y * Y - z * Z
+      ];
+    }
+
+    function pose() {
+      if (!selected || !root || !rotations) return [];
+      const positions = [], global = [], rootPosition = renderedRoot(), joints = parents.length;
+      for (let j = 0; j < joints; j++) {
+        const q = Array.from(rotations.subarray((frame * joints + j) * 4, (frame * joints + j + 1) * 4));
+        const p = parents[j];
+        if (p < 0) {
+          global[j] = q;
+          positions[j] = rootPosition;
+        } else {
+          global[j] = multiply(global[p], q);
+          positions[j] = add(positions[p], rotate(global[p], offsets[j]));
+        }
+      }
+      return positions;
+    }
+
+    function project([x, y, z]) {
+      x -= view.cameraX;
+      z -= view.cameraZ;
+      const rx = x * Math.cos(view.yaw) - z * Math.sin(view.yaw);
+      const rz = x * Math.sin(view.yaw) + z * Math.cos(view.yaw);
+      const ry = y * Math.cos(view.pitch) - rz * Math.sin(view.pitch);
+      const dz = y * Math.sin(view.pitch) + rz * Math.cos(view.pitch) + 8;
+      return [
+        canvas.width / 2 + view.panX + view.cameraZoom * rx / dz,
+        canvas.height * 0.78 + view.panY - view.cameraZoom * ry / dz
+      ];
+    }
+
+    function ground() {
+      const cx = 0, cz = 0, step = 0.5, initialExtent = 6;
+      const drawGrid = (extent, alpha, colour, width) => {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = width;
+        for (let i = -extent / step; i <= extent / step; i++) {
+          let a = project([cx - extent, 0, cz + i * step]), b = project([cx + extent, 0, cz + i * step]);
+          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+          a = project([cx + i * step, 0, cz - extent]); b = project([cx + i * step, 0, cz + extent]);
+          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        }
+      };
+      const [x, , z] = renderedRoot();
+      const rootDistance = Math.max(Math.abs(x), Math.abs(z));
+      const outerAlpha = 0.72 * Math.max(0, Math.min(1, (rootDistance - 3.5) / 2.5));
+      if (outerAlpha) drawGrid(18, outerAlpha, '#173943', 1);
+      drawGrid(initialExtent, 1, '#173943', 2);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#23606b';
+      ctx.lineWidth = 3;
+      const xAxis = project([cx - initialExtent, 0, cz]), xEnd = project([cx + initialExtent, 0, cz]);
+      const zAxis = project([cx, 0, cz - initialExtent]), zEnd = project([cx, 0, cz + initialExtent]);
+      ctx.beginPath(); ctx.moveTo(xAxis[0], xAxis[1]); ctx.lineTo(xEnd[0], xEnd[1]);
+      ctx.moveTo(zAxis[0], zAxis[1]); ctx.lineTo(zEnd[0], zEnd[1]); ctx.stroke();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const p = pose();
+      ground();
+      if (p.length) {
+        ctx.lineCap = 'round';
+        for (let pass = 0; pass < 2; pass++) {
+          ctx.strokeStyle = pass ? '#65eee1' : '#071014';
+          ctx.lineWidth = pass ? 7 : 13;
+          for (let i = 1; i < parents.length; i++) {
+            const a = project(p[i]), b = project(p[parents[i]]);
+            ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
           }
         }
-      });
+        for (const x of p) {
+          const a = project(x);
+          ctx.fillStyle = '#071014'; ctx.beginPath(); ctx.arc(a[0], a[1], 7, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ecfffd'; ctx.beginPath(); ctx.arc(a[0], a[1], 4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      slider.value = frame;
+      document.querySelector('#frameText').textContent = selected ? `frame ${frame + 1} / ${selected.frames}` : 'No animation';
 
-      // Auto-frame camera based on model bounding box
-      const box = new THREE.Box3().setFromObject(currentCharacterModel);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const fov = threeCamera.fov * (Math.PI / 180);
-      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-      cameraZ = Math.max(cameraZ, 2.0);
+      // Sync 3D Mesh Character animation pose
+      if (threeMixer) {
+        threeMixer.setTime(frame / 30.0);
+      }
+    }
 
-      threeCamera.position.set(center.x, center.y + (size.y * 0.15), center.z + cameraZ);
-      threeControls.target.set(center.x, center.y, center.z);
-      threeControls.update();
+    function tick(t) {
+      if (selected) {
+        const interval = 1000 / 30;
+        if (!last) last = t;
+        if (playing) {
+          while (t - last >= interval) {
+            frame = (frame + 1) % selected.frames;
+            last += interval;
+          }
+          playbackBlend = Math.min(1, (t - last) / interval);
+        } else {
+          playbackBlend = 0;
+        }
+        updateCamera(t);
+        draw();
+        if (threeMixer) {
+          threeMixer.setTime((frame + playbackBlend) / 30.0);
+        }
+      }
+      if (threeControls) {
+        threeControls.update();
+      }
+      if (threeRenderer && threeScene && threeCamera) {
+        threeRenderer.render(threeScene, threeCamera);
+      }
+      requestAnimationFrame(tick);
+    }
 
-      threeScene.add(currentCharacterModel);
+    // --- 3D CHARACTER RETARGETED MESH (THREE.JS) ---
+    let threeScene, threeCamera, threeRenderer, threeControls, threeMixer, currentAction, currentGltfClips = [];
+    let currentCharacterModel;
+    const threeContainer = document.querySelector('#threeContainer');
+    const meshPlaceholder = document.querySelector('#meshPlaceholder');
+    const meshBadge = document.querySelector('#meshBadge');
+    const characterBadge = document.querySelector('#characterBadge');
+    const clipControl = document.querySelector('#clipControl');
+    const clipSelect = document.querySelector('#clipSelect');
 
-      // Setup Animation & Clips Dropdown
-      if (gltf.animations && gltf.animations.length > 0) {
-        currentGltfClips = gltf.animations;
-        threeMixer = new THREE.AnimationMixer(currentCharacterModel);
+    function playClipByIndex(idx) {
+      if (!threeMixer || !currentGltfClips[idx]) return;
+      if (currentAction) {
+        currentAction.stop();
+      }
+      currentAction = threeMixer.clipAction(currentGltfClips[idx]);
+      currentAction.reset().play();
+      threeMixer.setTime(frame / 30.0);
+      clipSelect.value = idx;
+      console.log(`[3D Viewport] Active Clip [${idx}]: "${currentGltfClips[idx].name}" (${currentGltfClips[idx].duration.toFixed(2)}s)`);
+    }
 
-        clipSelect.innerHTML = '';
-        let bestIdx = 0;
-        gltf.animations.forEach((clip, i) => {
-          const opt = document.createElement('option');
-          opt.value = i;
-          opt.textContent = `${clip.name || 'Clip ' + (i + 1)} (${clip.duration.toFixed(2)}s)`;
-          clipSelect.appendChild(opt);
+    clipSelect.onchange = e => {
+      playClipByIndex(Number(e.target.value));
+    };
 
-          const low = (clip.name || '').toLowerCase();
-          if (low.includes('baked') || low.includes('action') || low.includes('motion')) {
-            bestIdx = i;
+    function initThreeViewer() {
+      if (!window.THREE) return;
+      threeScene = new THREE.Scene();
+      threeScene.background = new THREE.Color(0x090e13);
+
+      const rect = threeContainer.getBoundingClientRect();
+      const w = rect.width || 600, h = rect.height || 400;
+
+      threeCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+      threeCamera.position.set(0, 1.4, 3.2);
+
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      threeRenderer.setSize(w, h);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      threeRenderer.shadowMap.enabled = true;
+      threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      threeRenderer.outputEncoding = THREE.sRGBEncoding;
+      threeContainer.appendChild(threeRenderer.domElement);
+
+      threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+      threeControls.enableDamping = true;
+      threeControls.dampingFactor = 0.05;
+      threeControls.target.set(0, 0.9, 0);
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      threeScene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+      dirLight.position.set(3, 6, 4);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      threeScene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0x3bd3d0, 0.6);
+      fillLight.position.set(-3, 2, -2);
+      threeScene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0x9f7aea, 0.8);
+      rimLight.position.set(0, 4, -4);
+      threeScene.add(rimLight);
+
+      // Ground Grid
+      const gridHelper = new THREE.GridHelper(20, 20, 0x3bd3d0, 0x1a2632);
+      gridHelper.position.y = 0;
+      threeScene.add(gridHelper);
+
+      window.addEventListener('resize', onThreeResize);
+    }
+
+    function onThreeResize() {
+      if (!threeRenderer || !threeCamera) return;
+      const rect = threeContainer.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        threeCamera.aspect = rect.width / rect.height;
+        threeCamera.updateProjectionMatrix();
+        threeRenderer.setSize(rect.width, rect.height);
+      }
+    }
+
+    async function loadRetargetedModel(modelUrl, charName = "Character", formatHint = "glb") {
+      if (!window.THREE) return;
+      meshPlaceholder.style.display = 'none';
+      meshBadge.textContent = `⏳ Loading ${charName}…`;
+      characterBadge.style.display = 'inline-flex';
+      characterBadge.textContent = `⏳ Loading ${charName}…`;
+
+      // Only treat as FBX if the actual URL or formatHint is explicitly FBX and not a converted GLB
+      const isFbx = (formatHint === 'fbx' || (modelUrl && modelUrl.toLowerCase().endsWith('.fbx'))) && 
+                    !modelUrl.toLowerCase().endsWith('.glb') && 
+                    !modelUrl.includes('.glb');
+
+      const handleLoadedModel = (rootObj, clips = []) => {
+        if (currentCharacterModel) {
+          threeScene.remove(currentCharacterModel);
+        }
+        currentCharacterModel = rootObj;
+        meshBadge.textContent = `👤 ${charName}`;
+        characterBadge.textContent = `👤 ${charName}`;
+
+        // Enable shadows & materials with full depth-writing to prevent see-through / X-ray artifacts
+        currentCharacterModel.traverse(node => {
+          if (node.isMesh && node.material) {
+            node.castShadow = true;
+            node.receiveShadow = true;
+            const fixMat = (m) => {
+              if (!m) return;
+              m.roughness = 0.5;
+              m.metalness = 0.1;
+              m.depthWrite = true;
+              m.depthTest = true;
+              m.side = THREE.FrontSide;
+              // If material is flagged as transparent, clamp alpha test and disable blend sorting issues
+              if (m.transparent) {
+                m.alphaTest = 0.5;
+                m.depthWrite = true;
+                m.transparent = false;
+                m.needsUpdate = true;
+              }
+            };
+            if (Array.isArray(node.material)) {
+              node.material.forEach(fixMat);
+            } else {
+              fixMat(node.material);
+            }
           }
         });
 
-        clipControl.style.display = 'inline-flex';
-        playClipByIndex(bestIdx);
-      } else {
+        // Auto-normalize scale if FBX uses centimeters (height > 30)
+        const initialBox = new THREE.Box3().setFromObject(currentCharacterModel);
+        const initialSize = initialBox.getSize(new THREE.Vector3());
+        if (initialSize.y > 30) {
+          currentCharacterModel.scale.setScalar(0.01);
+        }
+
+        // Auto-frame camera based on model bounding box
+        const box = new THREE.Box3().setFromObject(currentCharacterModel);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = threeCamera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
+        cameraZ = Math.max(cameraZ, 2.0);
+
+        threeCamera.position.set(center.x, center.y + (size.y * 0.15), center.z + cameraZ);
+        threeControls.target.set(center.x, center.y, center.z);
+        threeControls.update();
+
+        threeScene.add(currentCharacterModel);
+
+        // Setup Animation & Clips Dropdown
+        if (clips && clips.length > 0) {
+          currentGltfClips = clips;
+          threeMixer = new THREE.AnimationMixer(currentCharacterModel);
+
+          clipSelect.innerHTML = '';
+          let bestIdx = 0;
+          clips.forEach((clip, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `${clip.name || 'Clip ' + (i + 1)} (${clip.duration.toFixed(2)}s)`;
+            clipSelect.appendChild(opt);
+
+            const low = (clip.name || '').toLowerCase();
+            if (low.includes('baked') || low.includes('action') || low.includes('motion')) {
+              bestIdx = i;
+            }
+          });
+
+          clipControl.style.display = 'inline-flex';
+          playClipByIndex(bestIdx);
+        } else {
+          clipControl.style.display = 'none';
+        }
+
+        onThreeResize();
+      };
+
+      const onProgress = xhr => {
+        if (xhr.lengthComputable && xhr.total > 0) {
+          const percent = Math.round((xhr.loaded / xhr.total) * 100);
+          meshBadge.textContent = `⏳ Loading ${charName} (${percent}%)...`;
+        } else if (xhr.loaded > 0) {
+          meshBadge.textContent = `⏳ Loading ${charName} (${(xhr.loaded / 1024 / 1024).toFixed(1)}MB)...`;
+        }
+      };
+
+      const onError = err => {
+        console.error("Error loading character model:", err);
+        meshBadge.textContent = `❌ Load Error: ${err.message || 'Check Console'}`;
         clipControl.style.display = 'none';
+      };
+
+      if (isFbx) {
+        if (!window.THREE.FBXLoader) {
+          onError(new Error("FBXLoader not available"));
+          return;
+        }
+        const loader = new THREE.FBXLoader();
+        loader.load(
+          modelUrl,
+          obj => handleLoadedModel(obj, obj.animations || []),
+          onProgress,
+          onError
+        );
+      } else {
+        if (!window.THREE.GLTFLoader) {
+          onError(new Error("GLTFLoader not available"));
+          return;
+        }
+        const loader = new THREE.GLTFLoader();
+        if (window.THREE.DRACOLoader) {
+          const draco = new THREE.DRACOLoader();
+          draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+          loader.setDRACOLoader(draco);
+        }
+        loader.load(
+          modelUrl,
+          gltf => handleLoadedModel(gltf.scene, gltf.animations || []),
+          onProgress,
+          onError
+        );
+      }
+    }
+
+    // --- VIEW MODE SWITCHER ---
+    const stageArea = document.querySelector('#stageArea');
+    const tabSkeleton = document.querySelector('#tabSkeleton');
+    const tabDual = document.querySelector('#tabDual');
+    const tabMesh = document.querySelector('#tabMesh');
+
+    function setViewMode(mode) {
+      stageArea.className = `stage-viewport-area mode-${mode}`;
+      tabSkeleton.classList.toggle('active', mode === 'skeleton');
+      tabDual.classList.toggle('active', mode === 'dual');
+      tabMesh.classList.toggle('active', mode === 'mesh');
+      setTimeout(() => { onThreeResize(); draw(); }, 50);
+    }
+
+    tabSkeleton.onclick = () => setViewMode('skeleton');
+    tabDual.onclick = () => setViewMode('dual');
+    tabMesh.onclick = () => setViewMode('mesh');
+
+    // Global tracker for active user character in session
+    let currentUploadedBlobUrl = null;
+    let currentUploadedFileName = null;
+
+    // --- GALLERY & INTERACTION LOGIC ---
+    async function select(a) {
+      if (a.status !== 'ready') return;
+      selected = a;
+      download.href = `/api/animations/${a.id}/animation.glb`;
+      download.download = `kimodo-${a.id}.glb`;
+      download.hidden = false;
+
+      if (downloadMixamo) {
+        downloadMixamo.href = `/api/animations/${a.id}/animation_mixamo.glb`;
+        downloadMixamo.download = `kimodo-${a.id}-mixamo.glb`;
+        downloadMixamo.hidden = false;
       }
 
-      onThreeResize();
-    },
-    xhr => {
-      if (xhr.lengthComputable && xhr.total > 0) {
-        const percent = Math.round((xhr.loaded / xhr.total) * 100);
-        meshBadge.textContent = `⏳ Loading ${charName} (${percent}%)...`;
-      } else if (xhr.loaded > 0) {
-        meshBadge.textContent = `⏳ Loading ${charName} (${(xhr.loaded / 1024 / 1024).toFixed(1)}MB)...`;
+      promptBox.value = a.prompt;
+      await ensureModelsLoaded();
+      applySkeletonModel(a.model || 'soma-rp-v1.1');
+      window.dispatchEvent(new CustomEvent('kimodo:restore-sequence', { detail: { segments: a.segments, model: a.model } }));
+      status.className = 'readout';
+      status.textContent = `Selected ${a.id.slice(0, 8)} · sequence restored`;
+
+      [root, rotations] = await Promise.all([
+        fetch(`/api/animations/${a.id}/root.f32`).then(r => r.arrayBuffer()).then(b => new Float32Array(b)),
+        fetch(`/api/animations/${a.id}/rotations.f32`).then(r => r.arrayBuffer()).then(b => new Float32Array(b))
+      ]);
+
+      frame = 0;
+      playbackBlend = 0;
+      last = performance.now();
+      snapCamera();
+      slider.max = a.frames - 1;
+
+      // When switching animations: Keep the user's uploaded character in rest-pose preview, ready to bake!
+      bakeDownload.hidden = true;
+      if (currentUploadedBlobUrl) {
+        loadRetargetedModel(currentUploadedBlobUrl, currentUploadedFileName.split('.')[0] + ' (Rest Pose Preview)', 'glb');
+        bakeStatus.className = 'readout';
+        bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character ready. Click <b>"Bake to Mesh"</b> to animate with this motion!</span>`;
+        bakeBtn.style.animation = 'pulse 1.2s infinite';
+      } else {
+        if (currentCharacterModel) {
+          threeScene.remove(currentCharacterModel);
+          currentCharacterModel = null;
+        }
+        meshPlaceholder.style.display = 'flex';
+        meshBadge.textContent = '👤 Retargeted 3D Mesh';
+        characterBadge.style.display = 'none';
+        clipControl.style.display = 'none';
+        bakeStatus.className = 'readout';
+        bakeStatus.textContent = 'Upload your character (.fbx / .glb) and click Bake to Mesh.';
       }
-    },
-    err => {
-      console.error("Error loading character GLB:", err);
-      meshBadge.textContent = `❌ Load Error: ${err.message || 'Check Console'}`;
-      clipControl.style.display = 'none';
+
+      renderGallery();
+      draw();
     }
-  );
-}
 
-// --- VIEW MODE SWITCHER ---
-const stageArea = document.querySelector('#stageArea');
-const tabSkeleton = document.querySelector('#tabSkeleton');
-const tabDual = document.querySelector('#tabDual');
-const tabMesh = document.querySelector('#tabMesh');
-
-function setViewMode(mode) {
-  stageArea.className = `stage-viewport-area mode-${mode}`;
-  tabSkeleton.classList.toggle('active', mode === 'skeleton');
-  tabDual.classList.toggle('active', mode === 'dual');
-  tabMesh.classList.toggle('active', mode === 'mesh');
-  setTimeout(() => { onThreeResize(); draw(); }, 50);
-}
-
-tabSkeleton.onclick = () => setViewMode('skeleton');
-tabDual.onclick = () => setViewMode('dual');
-tabMesh.onclick = () => setViewMode('mesh');
-
-// Global tracker for active user character in session
-let currentUploadedBlobUrl = null;
-let currentUploadedFileName = null;
-
-// --- GALLERY & INTERACTION LOGIC ---
-async function select(a) {
-  if (a.status !== 'ready') return;
-  selected = a;
-  download.href = `/api/animations/${a.id}/animation.glb`;
-  download.download = `kimodo-${a.id}.glb`;
-  download.hidden = false;
-
-  if (downloadMixamo) {
-    downloadMixamo.href = `/api/animations/${a.id}/animation_mixamo.glb`;
-    downloadMixamo.download = `kimodo-${a.id}-mixamo.glb`;
-    downloadMixamo.hidden = false;
-  }
-
-  promptBox.value = a.prompt;
-  window.dispatchEvent(new CustomEvent('kimodo:restore-sequence', { detail: { segments: a.segments, model: a.model } }));
-  status.className = 'readout';
-  status.textContent = `Selected ${a.id.slice(0, 8)} · sequence restored`;
-
-  [root, rotations] = await Promise.all([
-    fetch(`/api/animations/${a.id}/root.f32`).then(r => r.arrayBuffer()).then(b => new Float32Array(b)),
-    fetch(`/api/animations/${a.id}/rotations.f32`).then(r => r.arrayBuffer()).then(b => new Float32Array(b))
-  ]);
-
-  frame = 0;
-  playbackBlend = 0;
-  last = performance.now();
-  snapCamera();
-  slider.max = a.frames - 1;
-
-  // When switching animations: Keep the user's uploaded character in rest-pose preview, ready to bake!
-  bakeDownload.hidden = true;
-  if (currentUploadedBlobUrl) {
-    loadRetargetedModel(currentUploadedBlobUrl, currentUploadedFileName.split('.')[0] + ' (Rest Pose Preview)');
-    bakeStatus.className = 'readout';
-    bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character ready. Click <b>"Bake to Mesh"</b> to animate with this motion!</span>`;
-    bakeBtn.style.animation = 'pulse 1.2s infinite';
-  } else {
-    if (currentCharacterModel) {
-      threeScene.remove(currentCharacterModel);
-      currentCharacterModel = null;
-    }
-    meshPlaceholder.style.display = 'flex';
-    meshBadge.textContent = '👤 Retargeted 3D Mesh';
-    characterBadge.style.display = 'none';
-    clipControl.style.display = 'none';
-    bakeStatus.className = 'readout';
-    bakeStatus.textContent = 'Upload your character (.fbx / .glb) and click Bake to Mesh.';
-  }
-
-  renderGallery();
-  draw();
-}
-
-function renderGallery() {
-  if (!animations.length) {
-    items.textContent = 'No animations yet.';
-    return;
-  }
-  items.replaceChildren(...animations.map(a => {
-    const b = document.createElement('button');
-    b.className = 'item ' + a.status + (selected?.id === a.id ? ' active' : '');
-    b.disabled = a.status !== 'ready';
-    b.innerHTML = `
+    function renderGallery() {
+      if (!animations.length) {
+        items.textContent = 'No animations yet.';
+        return;
+      }
+      items.replaceChildren(...animations.map(a => {
+        const b = document.createElement('button');
+        b.className = 'item ' + a.status + (selected?.id === a.id ? ' active' : '');
+        b.disabled = a.status !== 'ready';
+        b.innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;width:100%">
         <p style="margin:0;flex:1;text-align:left;line-height:1.35">${a.prompt}</p>
         <button class="item-del-btn" title="Delete animation" type="button">
@@ -1110,88 +1309,88 @@ function renderGallery() {
       ${a.error ? `<div class="error">${a.error}</div>` : ''}
     `;
 
-    const delBtn = b.querySelector('.item-del-btn');
-    if (delBtn) {
-      delBtn.onclick = async (e) => {
-        e.stopPropagation();
-        const shortPrompt = (a.prompt || a.id).slice(0, 32);
-        if (!confirm(`Delete animation "${shortPrompt}..." and all associated files?`)) {
-          return;
+        const delBtn = b.querySelector('.item-del-btn');
+        if (delBtn) {
+          delBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const shortPrompt = (a.prompt || a.id).slice(0, 32);
+            if (!confirm(`Delete animation "${shortPrompt}..." and all associated files?`)) {
+              return;
+            }
+            delBtn.disabled = true;
+            delBtn.textContent = '⏳';
+            try {
+              await fetch('/api/animations/' + a.id, { method: 'DELETE' });
+              if (selected?.id === a.id) {
+                selected = null;
+                download.hidden = true;
+                if (downloadMixamo) downloadMixamo.hidden = true;
+                bakeDownload.hidden = true;
+                rotations = null;
+                root = null;
+                if (threeMixer) threeMixer.stopAllAction();
+                status.textContent = 'Animation deleted.';
+              }
+              await refresh();
+              draw();
+            } catch (err) {
+              console.error("Failed to delete animation:", err);
+            }
+          };
         }
-        delBtn.disabled = true;
-        delBtn.textContent = '⏳';
+
+        b.onclick = () => select(a);
+        return b;
+      }));
+    }
+
+    const openFolderBtn = document.querySelector('#openFolderBtn');
+    const outputFolderModal = document.querySelector('#outputFolderModal');
+    const closeFolderModal = document.querySelector('#closeFolderModal');
+    const copyPathBtn = document.querySelector('#copyPathBtn');
+    const modalDirPath = document.querySelector('#modalDirPath');
+    const modalFolderList = document.querySelector('#modalFolderList');
+
+    if (closeFolderModal) {
+      closeFolderModal.onclick = () => { outputFolderModal.style.display = 'none'; };
+    }
+    if (outputFolderModal) {
+      outputFolderModal.onclick = (e) => {
+        if (e.target === outputFolderModal) outputFolderModal.style.display = 'none';
+      };
+    }
+
+    if (copyPathBtn) {
+      copyPathBtn.onclick = async () => {
         try {
-          await fetch('/api/animations/' + a.id, { method: 'DELETE' });
-          if (selected?.id === a.id) {
-            selected = null;
-            download.hidden = true;
-            if (downloadMixamo) downloadMixamo.hidden = true;
-            bakeDownload.hidden = true;
-            rotations = null;
-            root = null;
-            if (threeMixer) threeMixer.stopAllAction();
-            status.textContent = 'Animation deleted.';
-          }
-          await refresh();
-          draw();
-        } catch (err) {
-          console.error("Failed to delete animation:", err);
+          await navigator.clipboard.writeText(modalDirPath.textContent);
+          copyPathBtn.textContent = '✅ Copied!';
+          setTimeout(() => { copyPathBtn.textContent = '📋 Copy'; }, 2000);
+        } catch (e) {
+          console.error(e);
         }
       };
     }
 
-    b.onclick = () => select(a);
-    return b;
-  }));
-}
+    async function openOutputFolderModal() {
+      outputFolderModal.style.display = 'flex';
+      modalFolderList.innerHTML = '<div style="color:var(--la-muted);font-size:0.85rem">Loading output files…</div>';
 
-const openFolderBtn = document.querySelector('#openFolderBtn');
-const outputFolderModal = document.querySelector('#outputFolderModal');
-const closeFolderModal = document.querySelector('#closeFolderModal');
-const copyPathBtn = document.querySelector('#copyPathBtn');
-const modalDirPath = document.querySelector('#modalDirPath');
-const modalFolderList = document.querySelector('#modalFolderList');
+      // Also trigger server OS explorer attempt in background
+      fetch('/api/open_folder', { method: 'POST' }).catch(() => { });
 
-if (closeFolderModal) {
-  closeFolderModal.onclick = () => { outputFolderModal.style.display = 'none'; };
-}
-if (outputFolderModal) {
-  outputFolderModal.onclick = (e) => {
-    if (e.target === outputFolderModal) outputFolderModal.style.display = 'none';
-  };
-}
+      try {
+        const res = await fetch('/api/output_files');
+        const data = await res.json();
+        if (data.output_dir) {
+          modalDirPath.textContent = data.output_dir;
+        }
+        if (!data.items || !data.items.length) {
+          modalFolderList.innerHTML = '<div style="color:var(--la-muted);font-size:0.85rem">No output files generated yet.</div>';
+          return;
+        }
 
-if (copyPathBtn) {
-  copyPathBtn.onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(modalDirPath.textContent);
-      copyPathBtn.textContent = '✅ Copied!';
-      setTimeout(() => { copyPathBtn.textContent = '📋 Copy'; }, 2000);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-}
-
-async function openOutputFolderModal() {
-  outputFolderModal.style.display = 'flex';
-  modalFolderList.innerHTML = '<div style="color:var(--la-muted);font-size:0.85rem">Loading output files…</div>';
-  
-  // Also trigger server OS explorer attempt in background
-  fetch('/api/open_folder', { method: 'POST' }).catch(() => {});
-
-  try {
-    const res = await fetch('/api/output_files');
-    const data = await res.json();
-    if (data.output_dir) {
-      modalDirPath.textContent = data.output_dir;
-    }
-    if (!data.items || !data.items.length) {
-      modalFolderList.innerHTML = '<div style="color:var(--la-muted);font-size:0.85rem">No output files generated yet.</div>';
-      return;
-    }
-
-    modalFolderList.innerHTML = data.items.map(item => `
+        modalFolderList.innerHTML = data.items.map(item => `
       <div style="background:#101720;border:1px solid var(--la-line);border-radius:8px;padding:10px 14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
           <div style="font-weight:600;font-size:0.85rem;color:var(--la-text)">${item.prompt || item.id}</div>
@@ -1208,192 +1407,218 @@ async function openOutputFolderModal() {
         </div>
       </div>
     `).join('');
-  } catch (err) {
-    modalFolderList.innerHTML = `<div style="color:#ff8888;font-size:0.85rem">Failed to load files: ${err.message}</div>`;
-  }
-}
+      } catch (err) {
+        modalFolderList.innerHTML = `<div style="color:#ff8888;font-size:0.85rem">Failed to load files: ${err.message}</div>`;
+      }
+    }
 
-if (openFolderBtn) {
-  openFolderBtn.onclick = openOutputFolderModal;
-}
+    if (openFolderBtn) {
+      openFolderBtn.onclick = openOutputFolderModal;
+    }
 
-function showProgress() {
-  const a = animations.find(a => a.id === activeRequest);
-  if (!a) return;
-  if (a.status === 'ready') {
-    status.className = 'readout';
-    status.textContent = 'Generation complete — select it from the gallery to play.';
-    activeRequest = undefined;
-    generate.disabled = false;
-    return;
-  }
-  if (a.status === 'failed') {
-    status.className = 'error';
-    status.textContent = `Generation failed: ${a.error}`;
-    activeRequest = undefined;
-    generate.disabled = false;
-    return;
-  }
-  const seconds = Math.max(0, Math.floor((Date.now() - activeStarted) / 1000));
-  status.className = 'readout progress';
-  status.textContent = a.status === 'running' ? `Generating motion… ${seconds}s elapsed` : `Queued… ${seconds}s elapsed`;
-  generate.disabled = true;
-}
+    function showProgress() {
+      const a = animations.find(a => a.id === activeRequest);
+      if (!a) return;
+      if (a.status === 'ready') {
+        status.className = 'readout';
+        status.textContent = 'Generation complete — select it from the gallery to play.';
+        activeRequest = undefined;
+        generate.disabled = false;
+        return;
+      }
+      if (a.status === 'failed') {
+        status.className = 'error';
+        status.textContent = `Generation failed: ${a.error}`;
+        activeRequest = undefined;
+        generate.disabled = false;
+        return;
+      }
+      const seconds = Math.max(0, Math.floor((Date.now() - activeStarted) / 1000));
+      status.className = 'readout progress';
+      status.textContent = a.status === 'running' ? `Generating motion… ${seconds}s elapsed` : `Queued… ${seconds}s elapsed`;
+      generate.disabled = true;
+    }
 
-async function refresh() {
-  animations = await fetch('/api/animations').then(r => r.json());
-  renderGallery();
-  showProgress();
-}
+    async function refresh() {
+      animations = await fetch('/api/animations').then(r => r.json());
+      renderGallery();
+      showProgress();
+    }
 
-generate.onclick = async () => {
-  const prompt = promptBox.value.trim();
-  if (!prompt) return;
-  generate.disabled = true;
-  status.className = 'readout progress';
-  status.textContent = 'Submitting generation…';
-  try {
-    const r = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, frames: 150, steps: 20, seed: 0, model: 'soma-rp-v1.1' })
+    generate.onclick = async () => {
+      const prompt = promptBox.value.trim();
+      if (!prompt) return;
+      generate.disabled = true;
+      status.className = 'readout progress';
+      status.textContent = 'Submitting generation…';
+      try {
+        const r = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, frames: 150, steps: 20, seed: 0, model: 'soma-rp-v1.1' })
+        });
+        if (!r.ok) throw new Error(await r.text());
+        const a = await r.json();
+        activeRequest = a.id;
+        activeStarted = Date.now();
+        await refresh();
+      } catch (e) {
+        status.className = 'error';
+        status.textContent = e.message;
+        generate.disabled = false;
+      }
+    };
+
+    document.querySelector('#play').onclick = e => {
+      playing = !playing;
+      last = performance.now();
+      playbackBlend = 0;
+      e.target.textContent = playing ? 'Pause' : 'Play';
+    };
+
+    slider.oninput = () => {
+      frame = Number(slider.value);
+      playbackBlend = 0;
+      last = performance.now();
+      draw();
+    };
+
+    document.querySelector('#reset').onclick = reset;
+    canvas.addEventListener('dblclick', reset);
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    let drag;
+    canvas.addEventListener('pointerdown', e => {
+      canvas.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
     });
-    if (!r.ok) throw new Error(await r.text());
-    const a = await r.json();
-    activeRequest = a.id;
-    activeStarted = Date.now();
-    await refresh();
-  } catch (e) {
-    status.className = 'error';
-    status.textContent = e.message;
-    generate.disabled = false;
-  }
-};
+    canvas.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.x = e.clientX;
+      drag.y = e.clientY;
+      if (drag.pan) {
+        view.panX += dx;
+        view.panY += dy;
+      } else {
+        view.yaw += dx * 0.008;
+        view.pitch = Math.max(-1.25, Math.min(1.25, view.pitch + dy * 0.008));
+      }
+      draw();
+    });
+    function end() { drag = undefined; }
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      view.zoom = Math.max(350, Math.min(3600, view.zoom * Math.exp(-e.deltaY * 0.001)));
+      draw();
+    }, { passive: false });
 
-document.querySelector('#play').onclick = e => {
-  playing = !playing;
-  last = performance.now();
-  playbackBlend = 0;
-  e.target.textContent = playing ? 'Pause' : 'Play';
-};
+    // --- BAKE TO CUSTOM MESH EVENT ---
+    const charFile = document.querySelector('#charFile');
+    const charFormat = document.querySelector('#charFormat');
+    const bakeBtn = document.querySelector('#bakeBtn');
+    const bakeStatus = document.querySelector('#bakeStatus');
+    const bakeDownload = document.querySelector('#bakeDownload');
 
-slider.oninput = () => {
-  frame = Number(slider.value);
-  playbackBlend = 0;
-  last = performance.now();
-  draw();
-};
+    // Instant preview when a GLB/GLTF or FBX character is chosen
+    charFile.onchange = async () => {
+      const file = charFile.files[0];
+      if (file) {
+        currentUploadedFileName = file.name;
+        const isFbx = file.name.toLowerCase().endsWith('.fbx');
+        const isGlb = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
 
-document.querySelector('#reset').onclick = reset;
-canvas.addEventListener('dblclick', reset);
-canvas.addEventListener('contextmenu', e => e.preventDefault());
+        if (isGlb) {
+          if (currentUploadedBlobUrl && currentUploadedBlobUrl.startsWith('blob:')) URL.revokeObjectURL(currentUploadedBlobUrl);
+          currentUploadedBlobUrl = URL.createObjectURL(file);
+          loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'glb');
+        } else if (isFbx) {
+          meshBadge.textContent = `⏳ Loading textures for ${file.name}…`;
+          bakeStatus.className = 'readout progress';
+          bakeStatus.textContent = `Loading ${file.name} textures and materials…`;
+          try {
+            const res = await fetch('/api/preview_model?filename=' + encodeURIComponent(file.name), {
+              method: 'POST',
+              body: file
+            });
+            const data = await res.json();
+            if (data.preview_url) {
+              currentUploadedBlobUrl = data.preview_url;
+              loadRetargetedModel(data.preview_url, file.name.split('.')[0] + ' (Rest Pose Preview)', 'glb');
+            } else {
+              currentUploadedBlobUrl = URL.createObjectURL(file);
+              loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'fbx');
+            }
+          } catch (err) {
+            console.warn("Preview fetch error, fallback to direct loader:", err);
+            currentUploadedBlobUrl = URL.createObjectURL(file);
+            loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'fbx');
+          }
+        }
+        bakeStatus.className = 'readout';
+        bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character <b>${file.name}</b> loaded. Click <b>"Bake to Mesh"</b> to animate!</span>`;
+        bakeBtn.style.animation = 'pulse 1.2s infinite';
+      }
+    };
 
-let drag;
-canvas.addEventListener('pointerdown', e => {
-  canvas.setPointerCapture(e.pointerId);
-  drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
-});
-canvas.addEventListener('pointermove', e => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-  drag.x = e.clientX;
-  drag.y = e.clientY;
-  if (drag.pan) {
-    view.panX += dx;
-    view.panY += dy;
-  } else {
-    view.yaw += dx * 0.008;
-    view.pitch = Math.max(-1.25, Math.min(1.25, view.pitch + dy * 0.008));
-  }
-  draw();
-});
-function end() { drag = undefined; }
-canvas.addEventListener('pointerup', end);
-canvas.addEventListener('pointercancel', end);
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  view.zoom = Math.max(350, Math.min(3600, view.zoom * Math.exp(-e.deltaY * 0.001)));
-  draw();
-}, { passive: false });
+    bakeBtn.onclick = async () => {
+      bakeBtn.style.animation = 'none';
+      if (!selected || selected.status !== 'ready') {
+        bakeStatus.className = 'error';
+        bakeStatus.textContent = 'Please select an animation first.';
+        return;
+      }
+      const file = charFile.files[0];
+      if (!file) {
+        bakeStatus.className = 'error';
+        bakeStatus.textContent = 'Please choose a .fbx or .glb character file.';
+        return;
+      }
+      bakeBtn.disabled = true;
+      bakeDownload.hidden = true;
+      bakeStatus.className = 'readout progress';
+      bakeStatus.textContent = `Uploading ${file.name} & baking in Blender (2s)…`;
 
-// --- BAKE TO CUSTOM MESH EVENT ---
-const charFile = document.querySelector('#charFile');
-const charFormat = document.querySelector('#charFormat');
-const bakeBtn = document.querySelector('#bakeBtn');
-const bakeStatus = document.querySelector('#bakeStatus');
-const bakeDownload = document.querySelector('#bakeDownload');
+      try {
+        const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}`;
+        const res = await fetch(url, { method: 'POST', body: file });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Baking failed');
+        }
+        bakeStatus.className = 'readout';
+        bakeStatus.innerHTML = '<span style="color:var(--la-cyan-2);font-weight:600">✅ Baking complete! Animation attached.</span>';
+        bakeDownload.href = data.download_url;
+        bakeDownload.download = data.filename;
+        bakeDownload.textContent = `Download ${data.filename}`;
+        bakeDownload.hidden = false;
 
-// Instant preview when a GLB/GLTF character is chosen
-charFile.onchange = () => {
-  const file = charFile.files[0];
-  if (file) {
-    currentUploadedFileName = file.name;
-    if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) {
-      if (currentUploadedBlobUrl) URL.revokeObjectURL(currentUploadedBlobUrl);
-      currentUploadedBlobUrl = URL.createObjectURL(file);
-      loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)');
-    }
-    bakeStatus.className = 'readout';
-    bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character <b>${file.name}</b> loaded. Click <b>"Bake to Mesh"</b> to animate!</span>`;
-    bakeBtn.style.animation = 'pulse 1.2s infinite';
-  }
-};
+        // Immediately load the newly baked 3D character in the 3D viewport!
+        if (data.preview_url) {
+          loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || file.name.split('.')[0]) + ' (Animated)');
+          setViewMode('dual');
+        }
+        refresh();
+      } catch (err) {
+        bakeStatus.className = 'error';
+        bakeStatus.textContent = err.message;
+      } finally {
+        bakeBtn.disabled = false;
+      }
+    };
 
-bakeBtn.onclick = async () => {
-  bakeBtn.style.animation = 'none';
-  if (!selected || selected.status !== 'ready') {
-    bakeStatus.className = 'error';
-    bakeStatus.textContent = 'Please select an animation first.';
-    return;
-  }
-  const file = charFile.files[0];
-  if (!file) {
-    bakeStatus.className = 'error';
-    bakeStatus.textContent = 'Please choose a .fbx or .glb character file.';
-    return;
-  }
-  bakeBtn.disabled = true;
-  bakeDownload.hidden = true;
-  bakeStatus.className = 'readout progress';
-  bakeStatus.textContent = `Uploading ${file.name} & baking in Blender (2s)…`;
-
-  try {
-    const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}`;
-    const res = await fetch(url, { method: 'POST', body: file });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      throw new Error(data.error || 'Baking failed');
-    }
-    bakeStatus.className = 'readout';
-    bakeStatus.innerHTML = '<span style="color:var(--la-cyan-2);font-weight:600">✅ Baking complete! Animation attached.</span>';
-    bakeDownload.href = data.download_url;
-    bakeDownload.download = data.filename;
-    bakeDownload.textContent = `Download ${data.filename}`;
-    bakeDownload.hidden = false;
-
-    // Immediately load the newly baked 3D character in the 3D viewport!
-    if (data.preview_url) {
-      loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || file.name.split('.')[0]) + ' (Animated)');
-      setViewMode('dual');
-    }
-    refresh();
-  } catch (err) {
-    bakeStatus.className = 'error';
-    bakeStatus.textContent = err.message;
-  } finally {
-    bakeBtn.disabled = false;
-  }
-};
-
-// Initial Setup
-initThreeViewer();
-refresh().then(() => {
-  const a = animations.find(a => a.status === 'ready');
-  if (a) return select(a);
-  draw();
-});
-setInterval(refresh, 2500);
-requestAnimationFrame(tick);
-</script>
+    // Initial Setup
+    initThreeViewer();
+    ensureModelsLoaded().then(() => refresh()).then(() => {
+      const a = animations.find(a => a.status === 'ready');
+      if (a) return select(a);
+      draw();
+    });
+    setInterval(refresh, 2500);
+    requestAnimationFrame(tick);
+  </script>
 </body>
+
 </html>
