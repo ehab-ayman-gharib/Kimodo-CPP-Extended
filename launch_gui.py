@@ -374,23 +374,42 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(res).encode('utf-8'))
-        elif url == "/api/animations":
-            items = list(gallery_items.values())
-            # Enrich items with baked character information if available
-            for item in items:
-                aid = item.get("id")
-                if aid:
-                    item_dir = OUTPUT_DIR / aid
-                    meta_file = item_dir / "baked_meta.json"
-                    if meta_file.is_file():
+        elif url == "/api/output_files":
+            res = []
+            for item_dir in sorted(OUTPUT_DIR.iterdir(), key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True):
+                if item_dir.is_dir():
+                    files = []
+                    for f in sorted(item_dir.iterdir()):
+                        # Only show clean animation files
+                        if f.is_file() and not f.name.startswith("upload_") and not f.name.endswith("_animated.glb") and not f.name.endswith("_animated.fbx") and f.name != "baked_meta.json":
+                            files.append({
+                                "name": f.name,
+                                "size": f.stat().st_size,
+                                "url": f"/api/retarget/download/{item_dir.name}/{f.name}"
+                            })
+                    prompt = ""
+                    p_file = item_dir / "prompt.txt"
+                    if p_file.is_file():
                         try:
-                            meta = json.loads(meta_file.read_text(encoding="utf-8"))
-                            preview_fname = meta.get("preview_filename", "")
-                            if (item_dir / preview_fname).is_file():
-                                item["baked_character_url"] = f"/api/retarget/download/{aid}/{preview_fname}"
-                                item["baked_character_name"] = preview_fname
+                            prompt = p_file.read_text(encoding="utf-8").strip()
                         except Exception:
                             pass
+                    res.append({
+                        "id": item_dir.name,
+                        "prompt": prompt,
+                        "path": str(item_dir),
+                        "files": files
+                    })
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "output_dir": str(OUTPUT_DIR.resolve()),
+                "items": res
+            }).encode('utf-8'))
+            return
+        elif url == "/api/animations":
+            items = list(gallery_items.values())
             items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -575,21 +594,6 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 preview_path = item_dir / preview_filename
                 preview_url = f"/api/retarget/download/{aid}/{preview_filename}" if preview_path.is_file() else f"/api/retarget/download/{aid}/{out_filename}"
 
-                # Persist metadata for this animation
-                try:
-                    (item_dir / "baked_meta.json").write_text(json.dumps({
-                        "preview_filename": preview_filename,
-                        "out_filename": out_filename,
-                        "character_name": clean_stem
-                    }, indent=2), encoding="utf-8")
-                except Exception as meta_e:
-                    print(f"Error saving baked_meta: {meta_e}")
-
-                # Update gallery item
-                if aid in gallery_items:
-                    gallery_items[aid]["baked_character_url"] = preview_url
-                    gallery_items[aid]["baked_character_name"] = preview_filename
-
                 print(f"[Retarget] Success! Saved to {out_path}")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -609,8 +613,76 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(ex)}).encode('utf-8'))
+
+        elif path == "/api/open_folder":
+            try:
+                folder_path = OUTPUT_DIR.resolve()
+                folder_path.mkdir(parents=True, exist_ok=True)
+                print(f"[Explorer] Opening output directory: {folder_path}")
+                if sys.platform == "win32":
+                    subprocess.Popen(f'explorer "{folder_path}"', shell=True)
+                elif sys.platform == "darwin":
+                    subprocess.Popen(["open", str(folder_path)])
+                else:
+                    subprocess.Popen(["xdg-open", str(folder_path)])
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "opened", "path": str(folder_path)}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+
+        elif path.startswith("/api/animations/") and path.endswith("/delete"):
+            parts = path.strip("/").split("/")
+            if len(parts) == 4:
+                aid = parts[2]
+                item_dir = OUTPUT_DIR / aid
+                if item_dir.exists():
+                    shutil.rmtree(item_dir, ignore_errors=True)
+                json_meta = OUTPUT_DIR / f"{aid}.json"
+                if json_meta.is_file():
+                    try:
+                        json_meta.unlink()
+                    except Exception:
+                        pass
+                gallery_items.pop(aid, None)
+                print(f"[Delete] Animation {aid} removed.")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "deleted", "id": aid}).encode('utf-8'))
+                return
+            self.send_error(404)
         else:
             self.send_error(404)
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path.startswith("/api/animations/"):
+            parts = path.strip("/").split("/")
+            if len(parts) == 3:
+                aid = parts[2]
+                item_dir = OUTPUT_DIR / aid
+                if item_dir.exists():
+                    shutil.rmtree(item_dir, ignore_errors=True)
+                json_meta = OUTPUT_DIR / f"{aid}.json"
+                if json_meta.is_file():
+                    try:
+                        json_meta.unlink()
+                    except Exception:
+                        pass
+                gallery_items.pop(aid, None)
+                print(f"[Delete] Animation {aid} removed.")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "deleted", "id": aid}).encode('utf-8'))
+                return
+        self.send_error(404)
 
 if __name__ == "__main__":
     server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), KimodoHandler)

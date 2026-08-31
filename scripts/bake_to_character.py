@@ -155,6 +155,27 @@ def main():
 
     print(f"Resolved {len(bone_map)} bones from SOMA to Target Armature.")
 
+    # Calculate leg heights and root scale ratio for accurate floor contact
+    s_hip_b = src_arm.data.bones.get('Hips')
+    s_foot_b = src_arm.data.bones.get('LeftFoot') or src_arm.data.bones.get('RightFoot')
+    s_leg_height = abs(s_hip_b.head_local.z - s_foot_b.head_local.z) if (s_hip_b and s_foot_b) else 0.938
+
+    t_hips_name = bone_map.get('Hips')
+    t_hip_b = tgt_arm.data.bones.get(t_hips_name) if t_hips_name else None
+    t_foot_b = (
+        tgt_arm.data.bones.get(bone_map.get('LeftFoot'))
+        or tgt_arm.data.bones.get(bone_map.get('RightFoot'))
+        or tgt_arm.data.bones.get(bone_map.get('LeftToeBase'))
+        or tgt_arm.data.bones.get(bone_map.get('RightToeBase'))
+    )
+    t_foot_z = t_foot_b.head_local.z if t_foot_b else 0.0
+    t_leg_height = abs(t_hip_b.head_local.z - t_foot_z) if t_hip_b else s_leg_height
+    t_rest_hip_pos = (tgt_arm.matrix_world @ t_hip_b.head_local).copy() if t_hip_b else mathutils.Vector((0, 0, 0))
+
+    scale_ratio = t_leg_height / s_leg_height if s_leg_height > 0.05 else 1.0
+    scale_ratio = max(0.1, min(5.0, scale_ratio))
+    print(f"Hip Proportions: SOMA leg={s_leg_height:.3f}m -> Target leg={t_leg_height:.3f}m (Scale Ratio: {scale_ratio:.3f})")
+
     # 4. Construct Alignment Bone Frames on Source Armature
     bpy.context.view_layer.objects.active = src_arm
     bpy.ops.object.mode_set(mode='EDIT')
@@ -170,7 +191,32 @@ def main():
             ab.matrix.translation = eb_src.head
             ab.parent = eb_src
 
+    # Dedicated root translation alignment bone
+    ab_loc = src_arm.data.edit_bones.new("ALIGN_Hips_Loc")
+    ab_loc.head = t_rest_hip_pos
+    ab_loc.tail = t_rest_hip_pos + mathutils.Vector((0, 0, 0.1))
+    ab_loc.parent = None
+
     bpy.ops.object.mode_set(mode='OBJECT')
+
+    # Animate ALIGN_Hips_Loc across action frames with proportional scaling
+    action = src_arm.animation_data.action if src_arm.animation_data else None
+    if action:
+        f_start = int(action.frame_range[0])
+        f_end = int(action.frame_range[1])
+        pb_align = src_arm.pose.bones["ALIGN_Hips_Loc"]
+        pb_s_hip = src_arm.pose.bones["Hips"]
+        mat_inv = pb_align.bone.matrix_local.to_3x3().inverted()
+
+        for f in range(f_start, f_end + 1):
+            bpy.context.scene.frame_set(f)
+            s_loc = pb_s_hip.matrix.translation
+            scaled_x = t_rest_hip_pos.x + s_loc.x * scale_ratio
+            scaled_y = t_rest_hip_pos.y + s_loc.y * scale_ratio
+            scaled_z = t_rest_hip_pos.z + (s_loc.z - s_leg_height) * scale_ratio
+            desired_pos = mathutils.Vector((scaled_x, scaled_y, scaled_z))
+            pb_align.location = mat_inv @ (desired_pos - pb_align.bone.head_local)
+            pb_align.keyframe_insert(data_path="location", frame=f)
 
     # 5. Bind Pose Constraints to Target Armature
     bpy.context.view_layer.objects.active = tgt_arm
@@ -192,7 +238,7 @@ def main():
             if s_name == "Hips":
                 con_loc = pb_tgt.constraints.new('COPY_LOCATION')
                 con_loc.target = src_arm
-                con_loc.subtarget = s_name
+                con_loc.subtarget = "ALIGN_Hips_Loc"
                 con_loc.target_space = 'WORLD'
                 con_loc.owner_space = 'WORLD'
 
