@@ -10,7 +10,7 @@ window.addEventListener('load', async () => {
   const modelLabel = document.createElement('label');
   modelLabel.htmlFor = 'motionModel'; modelLabel.textContent = 'Motion model';
   const select = document.createElement('select');
-  select.id = 'motionModel'; select.style.cssText = 'width:100%;padding:10px;border-radius:10px;background:#0b1015;color:#f3f6f4;border:1px solid #25313b';
+  select.id = 'motionModel'; select.style.cssText = 'width:100%;padding:6px 8px;font-size:0.82rem;border-radius:8px;background:#0b1015;color:#f3f6f4;border:1px solid #25313b';
   for (const model of models) {
     const option = document.createElement('option'); option.value = model.id;
     option.disabled = !model.available;
@@ -24,8 +24,8 @@ window.addEventListener('load', async () => {
     const title = document.querySelector('.eyebrow');
     if (title) title.textContent = `${model.label} · Vulkan`;
     modelHint.classList.toggle('license-warning', !model.commercial);
-    const terms = model.commercial ? 'commercial use permitted under NVIDIA Open Model License' : '⚠ non-commercial research use only';
-    const detail = model.available ? `${model.skeleton} · ${model.upstream} · ` : `${model.skeleton} · ${model.reason} · `;
+    const terms = model.commercial ? 'commercial use permitted' : '⚠ research use only';
+    const detail = model.available ? `${model.skeleton} · ` : `${model.skeleton} · ${model.reason} · `;
     const link = document.createElement('a'); link.href = model.license_url; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = terms;
     modelHint.replaceChildren(document.createTextNode(detail), link);
   };
@@ -33,7 +33,7 @@ window.addEventListener('load', async () => {
   form.insertBefore(modelLabel, prompt); form.insertBefore(select, prompt); form.insertBefore(modelHint, prompt); updateModel();
 
   const sequence = document.createElement('div');
-  sequence.style.cssText = 'display:grid;gap:10px;width:100%';
+  sequence.style.cssText = 'display:grid;gap:8px;width:100%';
   prompt.before(sequence);
   prompt.classList.add('sequence-prompt');
   const autoGrow = area => {
@@ -41,7 +41,7 @@ window.addEventListener('load', async () => {
     const minimum = Number.parseFloat(getComputedStyle(area).minHeight) || 0;
     area.style.height = `${Math.max(minimum, area.scrollHeight)}px`;
   };
-  prompt.style.minHeight = '110px';
+  prompt.style.minHeight = '65px';
   prompt.addEventListener('input', () => autoGrow(prompt));
   const minFrames = 60, maxFrames = 150;
   const segmentControls = new Map();
@@ -50,11 +50,12 @@ window.addEventListener('load', async () => {
   const configureDuration = (duration, frames) => {
     duration.type = 'number'; duration.min = String(minFrames); duration.max = String(maxFrames); duration.step = '1'; duration.value = String(clampFrames(frames));
     duration.title = `Frames (${minFrames}–${maxFrames})`;
+    duration.style.cssText = 'padding:6px 6px;text-align:center;font-size:0.85rem';
     duration.addEventListener('change', () => { duration.value = String(clampFrames(duration.value)); duration.setCustomValidity(''); });
     duration.addEventListener('invalid', () => duration.setCustomValidity(`Use a whole number from ${minFrames} to ${maxFrames} frames.`));
   };
   const primaryRow = document.createElement('div');
-  primaryRow.style.cssText = 'display:grid;grid-template-columns:1fr 74px;gap:7px;align-items:start';
+  primaryRow.style.cssText = 'display:grid;grid-template-columns:1fr 64px;gap:6px;align-items:start';
   const primaryDuration = document.createElement('input');
   configureDuration(primaryDuration, 150);
   primaryRow.append(prompt, primaryDuration); sequence.append(primaryRow);
@@ -66,19 +67,19 @@ window.addEventListener('load', async () => {
     count.textContent = `${prompts.length} segment${prompts.length === 1 ? '' : 's'} · 5-frame conditioned hand-off`;
   };
   const addSegment = (text = '', frames = 150) => {
-    const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:1fr 74px auto;gap:7px;align-items:start';
+    const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:1fr 64px auto;gap:6px;align-items:start';
     const textArea = document.createElement('textarea'); textArea.className = 'sequence-prompt'; textArea.value = text;
-    textArea.placeholder = 'Describe the next motion'; textArea.style.minHeight = '110px';
+    textArea.placeholder = 'Describe the next motion'; textArea.style.minHeight = '65px';
     textArea.style.resize = 'none'; textArea.style.overflow = 'hidden'; textArea.addEventListener('input', () => autoGrow(textArea));
     const duration = document.createElement('input'); configureDuration(duration, frames);
-    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.title = 'Remove segment'; remove.style.cssText = 'padding:8px 12px;background:#24313a;color:#dce9e8';
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.title = 'Remove segment'; remove.style.cssText = 'padding:6px 10px;background:#24313a;color:#dce9e8';
     remove.onclick = () => { row.remove(); updateCount(); };
     row.append(textArea, duration, remove); sequence.append(row); segmentControls.set(row, duration);
     autoGrow(textArea);
     updateCount();
   };
   const add = document.createElement('button'); add.type = 'button'; add.textContent = '+ Add prompt segment';
-  add.style.cssText = 'justify-self:start;padding:8px 12px;background:#24313a;color:#dce9e8';
+  add.style.cssText = 'justify-self:start;padding:5px 10px;font-size:0.75rem;border-radius:6px;background:#182530;color:#dce9e8';
   add.onclick = () => addSegment(); form.insertBefore(add, generate); form.insertBefore(count, generate); updateCount();
 
   // The gallery owns the selected animation; receive its full saved sequence

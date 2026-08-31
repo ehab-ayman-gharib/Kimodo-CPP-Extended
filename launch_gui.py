@@ -1,152 +1,193 @@
 #!/usr/bin/env python3
 """
-Kimodo.cpp Web GUI Server
-Serves the 3D interactive text-to-motion interface in your browser.
+Web GUI Launcher for Kimodo.cpp (Python-based standalone server).
+Supports text-to-motion generation, 3D skeleton preview, standard GLB / Mixamo GLB downloads,
+and Custom Character Retargeting (.fbx / .glb) with Live 3D Mesh Dual-Viewport.
 """
 
-import http.server
-import json
-import math
-import os
-import secrets
-import struct
-import subprocess
 import sys
-import threading
+import os
+import json
 import time
-from datetime import datetime, timezone
+import shutil
+import struct
+import base64
+import secrets
+import threading
+import subprocess
+import http.server
+import urllib.parse
 from pathlib import Path
+from datetime import datetime, timezone
 
 PORT = 8094
-ROOT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = Path(__file__).parent.resolve()
 DEMO_DIR = ROOT_DIR / "demo"
 OUTPUT_DIR = ROOT_DIR / "demo-output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-SMPLX22_PARENTS = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19]
-SMPLX22_NAMES = ["pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist"]
-SMPLX22_OFFSETS = [[0, 0, 0], [.052299, -.093936, -.027607], [-.057193, -.106548, -.022218], [-.001496, .11293, -.024981], [.058867, -.416442, -.006557], [-.048074, -.39756, -.014061], [.0069, .145636, -.006859], [-.041738, -.437584, -.029512], [.014489, -.446853, -.01803], [-.010334, .056082, .021116], [.049294, -.065279, .126259], [-.040575, -.065287, .127076], [-.011026, .171365, -.028827], [.047725, .087643, -.008375], [-.046636, .086612, -.014864], [.024654, .175391, .024463], [.126285, .05768, -.013885], [-.109342, .053674, -.009118], [.272907, -.069853, -.039094], [-.292029, -.03544, -.024565], [.276174, .021254, -.002478], [-.271878, -.004835, -.016445]]
-
-SOMA30_NAMES = ["Hips", "Spine1", "Spine2", "Chest", "Neck1", "Neck2", "Head", "Jaw", "LeftEye", "RightEye", "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "LeftHandThumbEnd", "LeftHandMiddleEnd", "RightShoulder", "RightArm", "RightForeArm", "RightHand", "RightHandThumbEnd", "RightHandMiddleEnd", "LeftLeg", "LeftShin", "LeftFoot", "LeftToeBase", "RightLeg", "RightShin", "RightFoot", "RightToeBase"]
-SOMA30_PARENTS = [-1, 0, 1, 2, 3, 4, 5, 6, 6, 6, 3, 10, 11, 12, 13, 13, 3, 16, 17, 18, 19, 19, 0, 22, 23, 24, 0, 26, 27, 28]
-SOMA30_OFFSETS = [[0, 0, 0], [-.00013727, .0500376256, -.00053726669], [-1.86574103e-9, .0712530139, -.000298248546], [-5.75188398e-9, .0755006305, -.00815970992], [-.00181676517, .263112953, -.00553348292], [-2.85102231e-8, .0770939664, .0230258546], [-4.5975437e-8, .0612891595, .0195370861], [2.63687901e-5, .0047559225, .0309494062], [.0320638079, .0538020513, .0758688308], [-.0322244017, .05361869, .0755823359], [.0162165175, .232371641, .0511341324], [.149198457, 2.19397873e-8, -.0550232576], [.287393078, 2.50268389e-9, -2.58787737e-5], [.270939812, -7.06625108e-9, 2.60897248e-5], [.122686267, -.0322017573, .0483306876], [.190119595, -.00312878387, -.000339570373], [-.0138011824, .231803086, .0521415786], [-.150371962, 1.17387901e-7, -.0554560437], [-.287366393, 1.87628082e-8, -2.59709359e-5], [-.271336198, -1.16767401e-9, 2.61269368e-5], [-.122642483, -.0321145448, .0480403904], [-.190005945, -.00306615542, -.0003157343], [.10043214, -.0843452671, .0259565473], [-1e-8, -.432217537, -.00802912805], [1e-8, -.421550959, -.0348152298], [0, -.0505947206, .132315294], [-.10047278, -.0829525995, .0262031695], [1e-8, -.433622059, -.00805555828], [2e-8, -.421173943, -.0347839785], [-3.42907669e-9, -.0507960932, .132841956]]
-
-G1SKEL34_NAMES = ["pelvis_skel", "left_hip_pitch_skel", "left_hip_roll_skel", "left_hip_yaw_skel", "left_knee_skel", "left_ankle_pitch_skel", "left_ankle_roll_skel", "left_toe_base", "right_hip_pitch_skel", "right_hip_roll_skel", "right_hip_yaw_skel", "right_knee_skel", "right_ankle_pitch_skel", "right_ankle_roll_skel", "right_toe_base", "waist_yaw_skel", "waist_roll_skel", "waist_pitch_skel", "left_shoulder_pitch_skel", "left_shoulder_roll_skel", "left_shoulder_yaw_skel", "left_elbow_skel", "left_wrist_roll_skel", "left_wrist_pitch_skel", "left_wrist_yaw_skel", "left_hand_roll_skel", "right_shoulder_pitch_skel", "right_shoulder_roll_skel", "right_shoulder_yaw_skel", "right_elbow_skel", "right_wrist_roll_skel", "right_wrist_pitch_skel", "right_wrist_yaw_skel", "right_hand_roll_skel"]
-G1SKEL34_PARENTS = [-1, 0, 1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11, 12, 13, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 17, 26, 27, 28, 29, 30, 31, 32]
-G1SKEL34_OFFSETS = [[0, 0, 0], [.064452, -.1027, 0], [.052, -.030465, 0], [0, -.12412, .025001], [.0021489, -.17734, -.078273], [-.000094445, -.30001, 0], [0, -.017558, 0], [0, -.035, .14], [-.064452, -.1027, 0], [-.052, -.030465, 0], [0, -.12412, .025001], [-.0021489, -.17734, -.078273], [.000094445, -.30001, 0], [0, -.017558, 0], [0, -.035, .14], [0, 0, 0], [0, .044, -.0039635], [0, 0, 0], [.10022, .24778, .0039563], [.038, -.013831, 0], [.00624, -.1032, 0], [0, -.080518, .015783], [.00188791, -.01, .1], [0, 0, .038], [0, 0, .046], [0, 0, .1], [-.10021, .24778, .0039563], [-.038, -.013831, 0], [-.00624, -.1032, 0], [0, -.080518, .015783], [-.00188791, -.01, .1], [0, 0, .038], [0, 0, .046], [0, 0, .1]]
-
+# Skeleton definitions
 SKELETONS = {
-    "smplx22": {"key": "smplx22", "names": SMPLX22_NAMES, "parents": SMPLX22_PARENTS, "offsets": SMPLX22_OFFSETS},
-    "soma30": {"key": "soma30", "names": SOMA30_NAMES, "parents": SOMA30_PARENTS, "offsets": SOMA30_OFFSETS},
-    "g1skel34": {"key": "g1skel34", "names": G1SKEL34_NAMES, "parents": G1SKEL34_PARENTS, "offsets": G1SKEL34_OFFSETS},
+    "smplx22": {
+        "names": ["pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist"],
+        "parents": [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19],
+        "offsets": [
+            [0, 0, 0], [0.052299, -0.093936, -0.027607], [-0.057193, -0.106548, -0.022218], [-0.001496, 0.11293, -0.024981], [0.058867, -0.416442, -0.006557], [-0.048074, -0.39756, -0.014061], [0.0069, 0.145636, -0.006859], [-0.041738, -0.437584, -0.029512], [0.014489, -0.446853, -0.01803], [-0.010334, 0.056082, 0.021116], [0.049294, -0.065279, 0.126259], [-0.040575, -0.065287, 0.127076], [-0.011026, 0.171365, -0.028827], [0.047725, 0.087643, -0.008375], [-0.046636, 0.086612, -0.014864], [0.024654, 0.175391, 0.024463], [0.126285, 0.05768, -0.013885], [-0.109342, 0.053674, -0.009118], [0.272907, -0.069853, -0.039094], [-0.292029, -0.03544, -0.024565], [0.276174, 0.021254, -0.002478], [-0.271878, -0.004835, -0.016445]
+        ]
+    },
+    "soma30": {
+        "names": ["Hips", "Spine1", "Spine2", "Chest", "Neck1", "Neck2", "Head", "Jaw", "LeftEye", "RightEye", "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "LeftHandThumbEnd", "LeftHandMiddleEnd", "RightShoulder", "RightArm", "RightForeArm", "RightHand", "RightHandThumbEnd", "RightHandMiddleEnd", "LeftLeg", "LeftShin", "LeftFoot", "LeftToeBase", "RightLeg", "RightShin", "RightFoot", "RightToeBase"],
+        "parents": [-1, 0, 1, 2, 3, 4, 5, 6, 6, 6, 3, 10, 11, 12, 13, 13, 3, 16, 17, 18, 19, 19, 0, 22, 23, 24, 0, 26, 27, 28],
+        "offsets": [
+            [0, 0, 0], [-.00013727, .0500376256, -.00053726669], [-1.86574103e-9, .0712530139, -.000298248546], [-5.75188398e-9, .0755006305, -.00815970992], [-.00181676517, .263112953, -.00553348292], [-2.85102231e-8, .0770939664, .0230258546], [-4.5975437e-8, .0612891595, .0195370861], [2.63687901e-5, .0047559225, .0309494062], [.0320638079, .0538020513, .0758688308], [-.0322244017, .05361869, .0755823359], [.0162165175, .232371641, .0511341324], [.149198457, 2.19397873e-8, -.0550232576], [.287393078, 2.50268389e-9, -2.58787737e-5], [.270939812, -7.06625108e-9, 2.60897248e-5], [.122686267, -.0322017573, .0483306876], [.190119595, -.00312878387, -.000339570373], [-.0138011824, .231803086, .0521415786], [-.150371962, 1.17387901e-7, -.0554560437], [-.287366393, 1.87628082e-8, -2.59709359e-5], [-.271336198, -1.16767401e-9, 2.61269368e-5], [-.122642483, -.0321145448, .0480403904], [-.190005945, -.00306615542, -.0003157343], [.10043214, -.0843452671, .0259565473], [-1e-8, -.432217537, -.00802912805], [1e-8, -.421550959, -.0348152298], [0, -.0505947206, .132315294], [-.10047278, -.0829525995, .0262031695], [1e-8, -.433622059, -.00805555828], [2e-8, -.421173943, -.0347839785], [-3.42907669e-9, -.0507960932, .132841956]
+        ]
+    },
+    "g1skel34": {
+        "names": ["pelvis_skel", "left_hip_pitch_skel", "left_hip_roll_skel", "left_hip_yaw_skel", "left_knee_skel", "left_ankle_pitch_skel", "left_ankle_roll_skel", "left_toe_base", "right_hip_pitch_skel", "right_hip_roll_skel", "right_hip_yaw_skel", "right_knee_skel", "right_ankle_pitch_skel", "right_ankle_roll_skel", "right_toe_base", "waist_yaw_skel", "waist_roll_skel", "waist_pitch_skel", "left_shoulder_pitch_skel", "left_shoulder_roll_skel", "left_shoulder_yaw_skel", "left_elbow_skel", "left_wrist_roll_skel", "left_wrist_pitch_skel", "left_wrist_yaw_skel", "left_hand_roll_skel", "right_shoulder_pitch_skel", "right_shoulder_roll_skel", "right_shoulder_yaw_skel", "right_elbow_skel", "right_wrist_roll_skel", "right_wrist_pitch_skel", "right_wrist_yaw_skel", "right_hand_roll_skel"],
+        "parents": [-1, 0, 1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11, 12, 13, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 17, 26, 27, 28, 29, 30, 31, 32],
+        "offsets": [
+            [0, 0, 0], [0.064452, -0.1027, 0], [0.052, -0.030465, 0], [0, -0.12412, 0.025001], [0.0021489, -0.17734, -0.078273], [-9.4445e-05, -0.30001, 0], [0, -0.017558, 0], [0, -0.035, 0.14], [-0.064452, -0.1027, 0], [-0.052, -0.030465, 0], [0, -0.12412, 0.025001], [-0.0021489, -0.17734, -0.078273], [9.4445e-05, -0.30001, 0], [0, -0.017558, 0], [0, -0.035, 0.14], [0, 0, 0], [0, 0.044, -0.0039635], [0, 0, 0], [0.10022, 0.24778, 0.0039563], [0.038, -0.013831, 0], [0.00624, -0.1032, 0], [0, -0.080518, 0.015783], [0.00188791, -0.01, 0.1], [0, 0, 0.038], [0, 0, 0.046], [0, 0, 0.1], [-0.10021, 0.24778, 0.0039563], [-0.038, -0.013831, 0], [-0.00624, -0.1032, 0], [0, -0.080518, 0.015783], [-0.00188791, -0.01, 0.1], [0, 0, 0.038], [0, 0, 0.046], [0, 0, 0.1]
+        ]
+    }
 }
 
 MODELS = {
     "soma-rp-v1.1": {
-        "id": "soma-rp-v1.1", "label": "SOMA RP v1.1", "skeleton": "SOMA compact 30-joint control skeleton",
-        "skeleton_key": "soma30", "upstream": "nvidia/Kimodo-SOMA-RP-v1.1",
-        "license": "NVIDIA Open Model License", "commercial": True,
+        "id": "soma-rp-v1.1",
+        "label": "SOMA RP v1.1",
+        "skeleton": "SOMA (30 joints)",
+        "skeleton_key": "soma30",
+        "upstream": "nvidia/Kimodo-SOMA-RP-v1.1",
+        "license": "NVIDIA Open Model License",
+        "commercial": True,
         "path": ROOT_DIR / "models/kimodo-soma-rp-v1.1-f32.gguf"
     },
     "soma-seed-v1.1": {
-        "id": "soma-seed-v1.1", "label": "SOMA SEED v1.1", "skeleton": "SOMA compact 30-joint control skeleton",
-        "skeleton_key": "soma30", "upstream": "nvidia/Kimodo-SOMA-SEED-v1.1",
-        "license": "NVIDIA Open Model License", "commercial": True,
+        "id": "soma-seed-v1.1",
+        "label": "SOMA SEED v1.1",
+        "skeleton": "SOMA (30 joints)",
+        "skeleton_key": "soma30",
+        "upstream": "nvidia/Kimodo-SOMA-SEED-v1.1",
+        "license": "NVIDIA Open Model License",
+        "commercial": True,
         "path": ROOT_DIR / "models/kimodo-soma-seed-v1.1-f32.gguf"
     },
     "g1-rp-v1": {
-        "id": "g1-rp-v1", "label": "G1 RP v1", "skeleton": "Unitree G1 34 joints",
-        "skeleton_key": "g1skel34", "upstream": "nvidia/Kimodo-G1-RP-v1",
-        "license": "NVIDIA Open Model License", "commercial": True,
+        "id": "g1-rp-v1",
+        "label": "G1 RP v1",
+        "skeleton": "Unitree G1 (34 joints)",
+        "skeleton_key": "g1skel34",
+        "upstream": "nvidia/Kimodo-G1-RP-v1",
+        "license": "NVIDIA Open Model License",
+        "commercial": True,
         "path": ROOT_DIR / "models/kimodo-g1-rp-v1-f32.gguf"
     },
     "g1-seed-v1": {
-        "id": "g1-seed-v1", "label": "G1 SEED v1", "skeleton": "Unitree G1 34 joints",
-        "skeleton_key": "g1skel34", "upstream": "nvidia/Kimodo-G1-SEED-v1",
-        "license": "NVIDIA Open Model License", "commercial": True,
+        "id": "g1-seed-v1",
+        "label": "G1 SEED v1",
+        "skeleton": "Unitree G1 (34 joints)",
+        "skeleton_key": "g1skel34",
+        "upstream": "nvidia/Kimodo-G1-SEED-v1",
+        "license": "NVIDIA Open Model License",
+        "commercial": True,
         "path": ROOT_DIR / "models/kimodo-g1-seed-v1-f32.gguf"
     },
+    "smplx-rp-v1": {
+        "id": "smplx-rp-v1",
+        "label": "SMPL-X RP v1",
+        "skeleton": "SMPL-X (22 joints)",
+        "skeleton_key": "smplx22",
+        "upstream": "nvidia/Kimodo-SMPLX-RP-v1",
+        "license": "NVIDIA Internal Scientific R&D License",
+        "commercial": False,
+        "path": ROOT_DIR / "models/kimodo-smplx-rp-v1-f32.gguf"
+    }
 }
 
 def export_skeleton_glb(dir_path: Path, skeleton_key: str):
     skel = SKELETONS.get(skeleton_key)
     if not skel:
         return
-    root_file = dir_path / "root_positions.f32"
     rot_file = dir_path / "local_rotations_xyzw.f32"
-    if not root_file.is_file() or not rot_file.is_file():
-        return
-    root_bytes = root_file.read_bytes()
-    rot_bytes = rot_file.read_bytes()
-    roots = list(struct.unpack(f"{len(root_bytes)//4}f", root_bytes))
-    rotations = list(struct.unpack(f"{len(rot_bytes)//4}f", rot_bytes))
-
-    joints = len(skel["parents"])
-    frames = len(roots) // 3
-    if frames < 1 or len(rotations) != frames * joints * 4:
+    root_file = dir_path / "root_positions.f32"
+    if not rot_file.is_file() or not root_file.is_file():
         return
 
-    times = [float(i) / 30.0 for i in range(frames)]
-    bin_data = bytearray()
-    views = []
-
-    def add_view(values: list[float]):
-        offset = len(bin_data)
-        packed = struct.pack(f"{len(values)}f", *values)
-        bin_data.extend(packed)
-        views.append({"buffer": 0, "byteOffset": offset, "byteLength": len(packed)})
-        return len(views) - 1
-
-    time_view = add_view(times)
-    root_view = add_view(roots)
-    rot_views = []
-    for j in range(joints):
-        track = []
-        for f in range(frames):
-            idx = (f * joints + j) * 4
-            track.extend(rotations[idx : idx + 4])
-        rot_views.append(add_view(track))
-
-    accessors = [
-        {"bufferView": time_view, "componentType": 5126, "count": frames, "type": "SCALAR"},
-        {"bufferView": root_view, "componentType": 5126, "count": frames, "type": "VEC3"},
-    ]
-    for rv in rot_views:
-        accessors.append({"bufferView": rv, "componentType": 5126, "count": frames, "type": "VEC4"})
+    rots = rot_file.read_bytes()
+    roots = root_file.read_bytes()
+    num_frames = len(roots) // 12
+    num_joints = len(skel["names"])
 
     nodes = []
-    for j in range(joints):
-        node = {"name": skel["names"][j]}
-        if j != 0:
-            node["translation"] = skel["offsets"][j]
-        children = [c for c, p in enumerate(skel["parents"]) if p == j]
-        if children:
-            node["children"] = children
+    for j in range(num_joints):
+        node = {
+            "name": skel["names"][j],
+            "translation": skel["offsets"][j]
+        }
+        kids = [k for k, p in enumerate(skel["parents"]) if p == j]
+        if kids:
+            node["children"] = kids
         nodes.append(node)
 
-    samplers = []
-    channels = []
-    def add_channel(node_idx: int, output_idx: int, path: str):
-        samplers.append({"input": 0, "output": output_idx, "interpolation": "LINEAR"})
-        channels.append({"sampler": len(samplers) - 1, "target": {"node": node_idx, "path": path}})
+    times = bytearray()
+    for f in range(num_frames):
+        times.extend(struct.pack("<f", f / 30.0))
 
-    add_channel(0, 1, "translation")
-    for j in range(joints):
-        add_channel(j, j + 2, "rotation")
+    bin_data = bytearray()
+    time_offset = len(bin_data)
+    bin_data.extend(times)
 
-    gltf = {
-        "asset": {"version": "2.0", "generator": "kimodo.cpp skeleton exporter"},
-        "scene": 0,
+    while len(bin_data) % 4 != 0:
+        bin_data.append(0)
+    root_offset = len(bin_data)
+    bin_data.extend(roots)
+
+    while len(bin_data) % 4 != 0:
+        bin_data.append(0)
+    rot_offset = len(bin_data)
+    bin_data.extend(rots)
+
+    buffer_views = [
+        {"buffer": 0, "byteOffset": time_offset, "byteLength": len(times)},
+        {"buffer": 0, "byteOffset": root_offset, "byteLength": len(roots)},
+        {"buffer": 0, "byteOffset": rot_offset, "byteLength": len(rots)}
+    ]
+
+    accessors = [
+        {"bufferView": 0, "componentType": 5126, "count": num_frames, "type": "SCALAR", "min": [0.0], "max": [(num_frames - 1) / 30.0]},
+        {"bufferView": 1, "componentType": 5126, "count": num_frames, "type": "VEC3"},
+        {"bufferView": 2, "componentType": 5126, "count": num_frames * num_joints, "type": "VEC4"}
+    ]
+
+    samplers = [
+        {"input": 0, "output": 1, "interpolation": "LINEAR"},
+        {"input": 0, "output": 2, "interpolation": "LINEAR"}
+    ]
+
+    channels = [
+        {"sampler": 0, "target": {"node": 0, "path": "translation"}}
+    ]
+    for j in range(num_joints):
+        channels.append({
+            "sampler": 1,
+            "target": {"node": j, "path": "rotation"}
+        })
+
+    gltf_dict = {
+        "asset": {"version": "2.0", "generator": "kimodo-cpp-gui"},
         "scenes": [{"nodes": [0]}],
         "nodes": nodes,
-        "buffers": [{"byteLength": len(bin_data)}],
-        "bufferViews": views,
+        "animations": [{
+            "name": "kimodo_motion",
+            "samplers": samplers,
+            "channels": channels
+        }],
+        "bufferViews": buffer_views,
         "accessors": accessors,
-        "animations": [{"name": "KimodoMotion", "samplers": samplers, "channels": channels}],
-        "extras": {"skeleton": skel["key"], "fps": 30, "rotation_order": "xyzw"},
+        "buffers": [{"byteLength": len(bin_data)}]
     }
 
-    json_str = json.dumps(gltf, separators=(',', ':')).encode('utf-8')
+    json_str = json.dumps(gltf_dict).encode('utf-8')
     while len(json_str) % 4 != 0:
         json_str += b' '
     while len(bin_data) % 4 != 0:
@@ -265,10 +306,6 @@ def find_blender():
     p = shutil.which("blender")
     return p if p else "blender"
 
-import base64
-
-import urllib.parse
-
 class KimodoHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         print(f"[HTTP] {self.address_string()} - {format % args}")
@@ -297,6 +334,23 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(p.read_bytes())
             else:
                 self.send_error(404)
+        elif url.startswith("/assets/"):
+            rel_path = url[len("/assets/"):]
+            p = DEMO_DIR / "assets" / rel_path
+            if p.is_file():
+                self.send_response(200)
+                if p.suffix == ".js":
+                    self.send_header("Content-Type", "application/javascript; charset=utf-8")
+                elif p.suffix == ".png":
+                    self.send_header("Content-Type", "image/png")
+                elif p.suffix == ".css":
+                    self.send_header("Content-Type", "text/css; charset=utf-8")
+                else:
+                    self.send_header("Content-Type", "application/octet-stream")
+                self.end_headers()
+                self.wfile.write(p.read_bytes())
+                return
+            self.send_error(404)
         elif url == "/api/models":
             res = []
             for m in MODELS.values():
@@ -322,6 +376,21 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(res).encode('utf-8'))
         elif url == "/api/animations":
             items = list(gallery_items.values())
+            # Enrich items with baked character information if available
+            for item in items:
+                aid = item.get("id")
+                if aid:
+                    item_dir = OUTPUT_DIR / aid
+                    meta_file = item_dir / "baked_meta.json"
+                    if meta_file.is_file():
+                        try:
+                            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                            preview_fname = meta.get("preview_filename", "")
+                            if (item_dir / preview_fname).is_file():
+                                item["baked_character_url"] = f"/api/retarget/download/{aid}/{preview_fname}"
+                                item["baked_character_name"] = preview_fname
+                        except Exception:
+                            pass
             items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -465,14 +534,6 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 if file_bytes is not None:
                     char_path.write_bytes(file_bytes)
 
-                motion_glb = item_dir / "animation.glb"
-                if not motion_glb.is_file():
-                    self.send_response(404)
-                    self.send_header("Content-Type", "application/json")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"error": "Animation GLB not found for this ID"}).encode('utf-8'))
-                    return
-
                 clean_stem = Path(filename).stem
                 out_filename = f"{clean_stem}_animated.{out_format}"
                 out_path = item_dir / out_filename
@@ -482,7 +543,6 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
 
                 print(f"[Retarget] Running Blender: {blender_exe}")
                 print(f"[Retarget] Character: {char_path} ({char_path.stat().st_size} bytes)")
-                print(f"[Retarget] Motion:    {motion_glb}")
                 print(f"[Retarget] Output:    {out_path}")
 
                 cmd = [
@@ -494,7 +554,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     "--character",
                     str(char_path),
                     "--motion",
-                    str(motion_glb),
+                    str(item_dir),
                     "--output",
                     str(out_path),
                 ]
@@ -510,6 +570,26 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": err_msg[-500:]}).encode('utf-8'))
                     return
 
+                # Check for web preview GLB
+                preview_filename = f"{clean_stem}_animated.glb"
+                preview_path = item_dir / preview_filename
+                preview_url = f"/api/retarget/download/{aid}/{preview_filename}" if preview_path.is_file() else f"/api/retarget/download/{aid}/{out_filename}"
+
+                # Persist metadata for this animation
+                try:
+                    (item_dir / "baked_meta.json").write_text(json.dumps({
+                        "preview_filename": preview_filename,
+                        "out_filename": out_filename,
+                        "character_name": clean_stem
+                    }, indent=2), encoding="utf-8")
+                except Exception as meta_e:
+                    print(f"Error saving baked_meta: {meta_e}")
+
+                # Update gallery item
+                if aid in gallery_items:
+                    gallery_items[aid]["baked_character_url"] = preview_url
+                    gallery_items[aid]["baked_character_name"] = preview_filename
+
                 print(f"[Retarget] Success! Saved to {out_path}")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -517,7 +597,9 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({
                     "status": "success",
                     "filename": out_filename,
-                    "download_url": f"/api/retarget/download/{aid}/{out_filename}"
+                    "download_url": f"/api/retarget/download/{aid}/{out_filename}",
+                    "preview_url": preview_url,
+                    "character_name": clean_stem
                 }).encode('utf-8'))
 
             except Exception as ex:

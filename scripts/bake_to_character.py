@@ -219,16 +219,24 @@ def main():
         if obj == src_arm or "proxy" in obj.name.lower() or "canonical" in obj.name.lower():
             bpy.data.objects.remove(obj, do_unlink=True)
 
+    # Clean up unlinked actions so the exported GLB only contains the baked character action
+    if tgt_arm.animation_data and tgt_arm.animation_data.action:
+        tgt_arm.animation_data.action.name = "Baked_Animation"
+        for act in list(bpy.data.actions):
+            if act != tgt_arm.animation_data.action:
+                bpy.data.actions.remove(act)
+
     # 8. Export output
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    if output_file.suffix.lower() in (".glb", ".gltf"):
-        bpy.ops.export_scene.gltf(
-            filepath=str(output_file),
-            export_format='GLB',
-            export_animations=True,
-            export_current_frame=False
-        )
-    elif output_file.suffix.lower() == ".fbx":
+    preview_glb = output_file.with_suffix('.glb')
+    bpy.ops.export_scene.gltf(
+        filepath=str(preview_glb),
+        export_format='GLB',
+        export_animations=True,
+        export_current_frame=False,
+        export_draco_mesh_compression_enable=False
+    )
+    if output_file.suffix.lower() == ".fbx":
         bpy.ops.export_scene.fbx(
             filepath=str(output_file),
             bake_anim=True,
