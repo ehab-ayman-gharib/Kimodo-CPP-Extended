@@ -8,33 +8,83 @@ import sys
 import os
 import subprocess
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.resolve()))
 import bpy
 import mathutils
+import math
+import re
 
-BONE_MAPPING = {
-    "Hips": "mixamorig:Hips",
-    "Spine1": "mixamorig:Spine",
-    "Spine2": "mixamorig:Spine1",
-    "Chest": "mixamorig:Spine2",
-    "Neck1": "mixamorig:Neck",
-    "Head": "mixamorig:Head",
-    "LeftShoulder": "mixamorig:LeftShoulder",
-    "LeftArm": "mixamorig:LeftArm",
-    "LeftForeArm": "mixamorig:LeftForeArm",
-    "LeftHand": "mixamorig:LeftHand",
-    "RightShoulder": "mixamorig:RightShoulder",
-    "RightArm": "mixamorig:RightArm",
-    "RightForeArm": "mixamorig:RightForeArm",
-    "RightHand": "mixamorig:RightHand",
-    "LeftLeg": "mixamorig:LeftUpLeg",
-    "LeftShin": "mixamorig:LeftLeg",
-    "LeftFoot": "mixamorig:LeftFoot",
-    "LeftToeBase": "mixamorig:LeftToeBase",
-    "RightLeg": "mixamorig:RightUpLeg",
-    "RightShin": "mixamorig:RightLeg",
-    "RightFoot": "mixamorig:RightFoot",
-    "RightToeBase": "mixamorig:RightToeBase",
+BONE_CANDIDATES = {
+    "Hips": [
+        "hips", "pelvis", "bip001pelvis", "bip01pelvis", "root", "hip"
+    ],
+    "Spine1": [
+        "spine1", "spine", "bip001spine", "bip01spine", "lower_spine"
+    ],
+    "Spine2": [
+        "spine2", "spine1", "bip001spine1", "bip01spine1", "mid_spine"
+    ],
+    "Chest": [
+        "chest", "spine3", "spine2", "bip001spine2", "bip01spine2", "upper_spine"
+    ],
+    "Neck1": [
+        "neck1", "neck", "bip001neck", "bip01neck", "neck_01"
+    ],
+    "Head": [
+        "head", "bip001head", "bip01head"
+    ],
+    "LeftShoulder": [
+        "leftshoulder", "leftclavicle", "l_clavicle", "lclavicle", "bip001lclavicle", "bip01lclavicle", "clavicle_l", "claviclel", "clavicle.l", "l_shoulder"
+    ],
+    "LeftArm": [
+        "leftarm", "leftupperarm", "leftshoulder_arm", "l_upperarm", "lupperarm", "bip001lupperarm", "bip01lupperarm", "upperarm_l", "upperarml", "arm_l", "arml", "upper_arm.l", "l_arm"
+    ],
+    "LeftForeArm": [
+        "leftforearm", "leftlowerarm", "l_forearm", "lforearm", "bip001lforearm", "bip01lforearm", "forearm_l", "forearml", "lowerarm_l", "lowerarml", "forearm.l", "l_fore_arm"
+    ],
+    "LeftHand": [
+        "lefthand", "leftwrist", "l_hand", "lhand", "bip001lhand", "bip01lhand", "hand_l", "handl", "hand.l"
+    ],
+    "RightShoulder": [
+        "rightshoulder", "rightclavicle", "r_clavicle", "rclavicle", "bip001rclavicle", "bip01rclavicle", "clavicle_r", "clavicler", "clavicle.r", "r_shoulder"
+    ],
+    "RightArm": [
+        "rightarm", "rightupperarm", "rightshoulder_arm", "r_upperarm", "rupperarm", "bip001rupperarm", "bip01rupperarm", "upperarm_r", "upperarmr", "arm_r", "armr", "upper_arm.r", "r_arm"
+    ],
+    "RightForeArm": [
+        "rightforearm", "rightlowerarm", "r_forearm", "rforearm", "bip001rforearm", "bip01rforearm", "forearm_r", "forearmr", "lowerarm_r", "lowerarmr", "forearm.r", "r_fore_arm"
+    ],
+    "RightHand": [
+        "righthand", "rightwrist", "r_hand", "rhand", "bip001rhand", "bip01rhand", "hand_r", "handr", "hand.r"
+    ],
+    "LeftLeg": [
+        "leftupleg", "leftupperleg", "leftthigh", "l_thigh", "lthigh", "thigh_l", "thighl", "thigh.l", "bip001lthigh", "bip01lthigh", "l_leg", "leftleg"
+    ],
+    "LeftShin": [
+        "leftshin", "leftcalf", "leftlowerleg", "l_calf", "lcalf", "calf_l", "calfl", "shin_l", "shinl", "shin.l", "bip001lcalf", "bip01lcalf", "l_shin", "leftleg", "leg_l"
+    ],
+    "LeftFoot": [
+        "leftfoot", "l_foot", "lfoot", "bip001lfoot", "bip01lfoot", "foot_l", "footl", "foot.l"
+    ],
+    "LeftToeBase": [
+        "lefttoebase", "lefttoe", "l_toe0", "ltoe0", "l_toe", "ltoe", "bip001ltoe0", "bip01ltoe0", "bip001ltoe", "bip01ltoe", "toe_l", "toel", "toe.l", "ball_l"
+    ],
+    "RightLeg": [
+        "rightupleg", "rightupperleg", "rightthigh", "r_thigh", "rthigh", "thigh_r", "thighr", "thigh.r", "bip001rthigh", "bip01rthigh", "r_leg", "rightleg"
+    ],
+    "RightShin": [
+        "rightshin", "rightcalf", "rightlowerleg", "r_calf", "rcalf", "calf_r", "calfr", "shin_r", "shinr", "shin.r", "bip001rcalf", "bip01rcalf", "r_shin", "rightleg", "leg_r"
+    ],
+    "RightFoot": [
+        "rightfoot", "r_foot", "rfoot", "bip001rfoot", "bip01rfoot", "foot_r", "footr", "foot.r"
+    ],
+    "RightToeBase": [
+        "righttoebase", "righttoe", "r_toe0", "rtoe0", "r_toe", "rtoe", "bip001rtoe0", "bip01rtoe0", "bip001rtoe", "bip01rtoe", "toe_r", "toer", "toe.r", "ball_r"
+    ],
 }
+
+def normalize_name(name):
+    return re.sub(r'[^a-z0-9]', '', name.lower().replace('mixamorig', ''))
 
 def parse_args():
     argv = sys.argv
@@ -101,10 +151,23 @@ def main():
     print(f"Loading Source Motion:    {source_glb}")
     print(f"Loading Target Character: {char_file}")
 
+    # 2.5. If character is a 3ds Max Biped FBX, convert it to a pristine standard intermediate first
+    if char_file.suffix.lower() == ".fbx":
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        bpy.ops.import_scene.fbx(filepath=str(char_file))
+        is_biped_fbx = any(any('bip001' in b.name.lower() or 'bip01' in b.name.lower() for b in o.data.bones) for o in bpy.data.objects if o.type == 'ARMATURE')
+        if is_biped_fbx:
+            print("[Retarget] Detected 3ds Max Biped rig. Converting to clean Standard Mixamo Rig...")
+            from convert_biped_to_standard import convert_biped
+            interm_glb = char_file.parent / f"{char_file.stem}_std_interm.glb"
+            convert_biped(char_file, interm_glb)
+            char_file = interm_glb
+
     clear_scene()
 
     # 2. Import Source Animated GLB
     bpy.ops.import_scene.gltf(filepath=str(source_glb))
+    source_objs = set(bpy.data.objects)
     src_arm = find_armature()
     if not src_arm:
         print("Error: Could not find armature in source motion GLB.")
@@ -112,6 +175,7 @@ def main():
     src_arm.name = "Source_Armature"
 
     # 3. Import Target Character Mesh & Armature
+    all_before = list(bpy.data.objects)
     if char_file.suffix.lower() == ".fbx":
         bpy.ops.import_scene.fbx(filepath=str(char_file))
     elif char_file.suffix.lower() in (".glb", ".gltf"):
@@ -120,150 +184,227 @@ def main():
         print(f"Unsupported character format: {char_file.suffix}")
         sys.exit(1)
 
+    char_objs = [o for o in bpy.data.objects if o not in all_before]
+
     tgt_arm = find_armature(exclude=src_arm)
     if not tgt_arm:
         print("Error: Could not find armature in target character.")
         sys.exit(1)
     tgt_arm.name = "Target_Armature"
 
-    # Normalize transforms on target armature
-    bpy.context.view_layer.objects.active = tgt_arm
-    bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    # Normalize FBX (e.g. Maya/Mixamo/3ds Max Biped FBX) armature & meshes by applying object rotation transforms
+    if char_file.suffix.lower() == ".fbx":
+        for o in bpy.data.objects:
+            if o in char_objs:
+                o.select_set(True)
+            else:
+                o.select_set(False)
+        bpy.context.view_layer.objects.active = tgt_arm
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
-    # Clean up non-character meshes from FBX (like extra helper spheres)
-    for o in list(bpy.data.objects):
-        if o != tgt_arm and o.type == 'MESH':
-            if "ico" in o.name.lower() or "proxy" in o.name.lower():
-                bpy.data.objects.remove(o, do_unlink=True)
+    # Clear all pre-existing actions from character FBX so no legacy translation/rotation curves interfere
+    for a in list(bpy.data.actions):
+        if not (src_arm and src_arm.animation_data and a == src_arm.animation_data.action):
+            bpy.data.actions.remove(a)
+    for o in char_objs:
+        if o in bpy.data.objects.values() and o.animation_data:
+            o.animation_data_clear()
 
-    # Resolve bone names dynamically
+    meshes = [o for o in char_objs if o in bpy.data.objects.values() and o.type == 'MESH']
+
+
+    # Resolve bone names dynamically across Mixamo, 3ds Max Biped, Rigify, UE4/UE5, VRM
     bone_map = {}
-    for s_name, def_t_name in BONE_MAPPING.items():
+    tgt_bone_names = [b.name for b in tgt_arm.data.bones]
+    for s_name, candidate_patterns in BONE_CANDIDATES.items():
         if s_name not in src_arm.data.bones:
             continue
         matched = None
-        for c in [def_t_name, def_t_name.replace("mixamorig:", ""), s_name]:
-            for b in tgt_arm.data.bones:
-                if b.name.lower() == c.lower() or b.name.lower() == f"mixamorig:{c}".lower():
-                    matched = b.name
+        for pattern in candidate_patterns:
+            norm_pat = normalize_name(pattern)
+            for tb in tgt_bone_names:
+                if tb in bone_map.values():
+                    continue
+                if normalize_name(tb) == norm_pat:
+                    matched = tb
                     break
             if matched:
                 break
         if matched:
             bone_map[s_name] = matched
 
-    print(f"Resolved {len(bone_map)} bones from SOMA to Target Armature.")
+    print(f"[Retarget] Resolved {len(bone_map)} bones from SOMA to Target Armature ({tgt_arm.name}).")
+    for s_b, t_b in bone_map.items():
+        print(f"   • {s_b:14s} -> {t_b}")
 
-    # Calculate leg heights and root scale ratio for accurate floor contact
-    s_hip_b = src_arm.data.bones.get('Hips')
-    s_foot_b = src_arm.data.bones.get('LeftFoot') or src_arm.data.bones.get('RightFoot')
-    s_leg_height = abs(s_hip_b.head_local.z - s_foot_b.head_local.z) if (s_hip_b and s_foot_b) else 0.938
+    # 3. Compute static rest offsets & proportions in REST pose
+    src_arm.data.pose_position = 'REST'
+    tgt_arm.data.pose_position = 'REST'
+    bpy.context.view_layer.update()
 
+    m_offsets = {}
+    s_hip_b = src_arm.pose.bones.get('Hips')
     t_hips_name = bone_map.get('Hips')
-    t_hip_b = tgt_arm.data.bones.get(t_hips_name) if t_hips_name else None
-    t_foot_b = (
-        tgt_arm.data.bones.get(bone_map.get('LeftFoot'))
-        or tgt_arm.data.bones.get(bone_map.get('RightFoot'))
-        or tgt_arm.data.bones.get(bone_map.get('LeftToeBase'))
-        or tgt_arm.data.bones.get(bone_map.get('RightToeBase'))
-    )
-    t_foot_z = t_foot_b.head_local.z if t_foot_b else 0.0
-    t_leg_height = abs(t_hip_b.head_local.z - t_foot_z) if t_hip_b else s_leg_height
-    t_rest_hip_pos = (tgt_arm.matrix_world @ t_hip_b.head_local).copy() if t_hip_b else mathutils.Vector((0, 0, 0))
+    t_hip_b = tgt_arm.pose.bones.get(t_hips_name) if t_hips_name else None
 
-    scale_ratio = t_leg_height / s_leg_height if s_leg_height > 0.05 else 1.0
-    scale_ratio = max(0.1, min(5.0, scale_ratio))
-    print(f"Hip Proportions: SOMA leg={s_leg_height:.3f}m -> Target leg={t_leg_height:.3f}m (Scale Ratio: {scale_ratio:.3f})")
+    # Calculate A-pose to horizontal T-pose lift rotation for arm chains
+    q_l_lift = mathutils.Quaternion()
+    q_r_lift = mathutils.Quaternion()
 
-    # 4. Construct Alignment Bone Frames on Source Armature
-    bpy.context.view_layer.objects.active = src_arm
-    bpy.ops.object.mode_set(mode='EDIT')
+    l_arm_t_name = bone_map.get('LeftArm')
+    l_fa_t_name = bone_map.get('LeftForeArm')
+    if l_arm_t_name and l_fa_t_name and l_arm_t_name in tgt_arm.pose.bones and l_fa_t_name in tgt_arm.pose.bones:
+        p_l_sh = (tgt_arm.matrix_world @ tgt_arm.pose.bones[l_arm_t_name].matrix).translation
+        p_l_el = (tgt_arm.matrix_world @ tgt_arm.pose.bones[l_fa_t_name].matrix).translation
+        v_l_rest = (p_l_el - p_l_sh).normalized()
+        q_l_lift = v_l_rest.rotation_difference(mathutils.Vector((1, 0, 0)))
+
+    r_arm_t_name = bone_map.get('RightArm')
+    r_fa_t_name = bone_map.get('RightForeArm')
+    if r_arm_t_name and r_fa_t_name and r_arm_t_name in tgt_arm.pose.bones and r_fa_t_name in tgt_arm.pose.bones:
+        p_r_sh = (tgt_arm.matrix_world @ tgt_arm.pose.bones[r_arm_t_name].matrix).translation
+        p_r_el = (tgt_arm.matrix_world @ tgt_arm.pose.bones[r_fa_t_name].matrix).translation
+        v_r_rest = (p_r_el - p_r_sh).normalized()
+        q_r_lift = v_r_rest.rotation_difference(mathutils.Vector((-1, 0, 0)))
 
     for s_name, t_name in bone_map.items():
-        eb_src = src_arm.data.edit_bones.get(s_name)
-        eb_tgt = tgt_arm.data.bones.get(t_name)
-        if eb_src and eb_tgt:
-            ab = src_arm.data.edit_bones.new(f"ALIGN_{t_name}")
-            ab.head = eb_src.head
-            ab.tail = eb_src.tail
-            ab.matrix = eb_tgt.matrix_local.copy()
-            ab.matrix.translation = eb_src.head
-            ab.parent = eb_src
+        pb_s = src_arm.pose.bones.get(s_name)
+        pb_t = tgt_arm.pose.bones.get(t_name)
+        if pb_s and pb_t:
+            s_rot = (src_arm.matrix_world @ pb_s.matrix).to_3x3()
+            t_rot = (tgt_arm.matrix_world @ pb_t.matrix).to_3x3()
+            
+            # If arm bone, lift target rest orientation into virtual T-pose
+            if s_name in ['LeftArm', 'LeftForeArm', 'LeftHand']:
+                t_rot = q_l_lift.to_matrix() @ t_rot
+            elif s_name in ['RightArm', 'RightForeArm', 'RightHand']:
+                t_rot = q_r_lift.to_matrix() @ t_rot
+                
+            m_offsets[s_name] = s_rot.inverted() @ t_rot
 
-    # Dedicated root translation alignment bone
-    ab_loc = src_arm.data.edit_bones.new("ALIGN_Hips_Loc")
-    ab_loc.head = t_rest_hip_pos
-    ab_loc.tail = t_rest_hip_pos + mathutils.Vector((0, 0, 0.1))
-    ab_loc.parent = None
+    # Leg heights & root scale ratio
+    s_foot_b = src_arm.data.bones.get('LeftFoot') or src_arm.data.bones.get('RightFoot')
+    s_leg_height = abs(src_arm.data.bones['Hips'].head_local.z - s_foot_b.head_local.z) if (s_foot_b and 'Hips' in src_arm.data.bones) else 0.938
+    
+    t_foot_b = None
+    for foot_key in ('LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'):
+        name = bone_map.get(foot_key)
+        if name and name in tgt_arm.data.bones:
+            t_foot_b = tgt_arm.data.bones.get(name)
+            break
 
-    bpy.ops.object.mode_set(mode='OBJECT')
+    if t_hip_b:
+        t_hip_z = (tgt_arm.matrix_world @ t_hip_b.matrix).translation.z
+        t_foot_z = (tgt_arm.matrix_world @ tgt_arm.pose.bones[t_foot_b.name].matrix).translation.z if t_foot_b else 0.0
+        t_leg_height = abs(t_hip_z - t_foot_z)
+        t_rest_hip_pos = (tgt_arm.matrix_world @ t_hip_b.matrix).translation.copy()
+    else:
+        t_leg_height = s_leg_height
+        t_rest_hip_pos = mathutils.Vector((0, 0, s_leg_height))
 
-    # Animate ALIGN_Hips_Loc across action frames with proportional scaling
-    action = src_arm.animation_data.action if src_arm.animation_data else None
-    if action:
-        f_start = int(action.frame_range[0])
-        f_end = int(action.frame_range[1])
-        pb_align = src_arm.pose.bones["ALIGN_Hips_Loc"]
-        pb_s_hip = src_arm.pose.bones["Hips"]
-        mat_inv = pb_align.bone.matrix_local.to_3x3().inverted()
+    scale_ratio = t_leg_height / s_leg_height if s_leg_height > 0.05 else 1.0
+    scale_ratio = max(0.05, min(10.0, scale_ratio))
+    print(f"[Proportions] SOMA leg={s_leg_height:.3f}m -> Target leg={t_leg_height:.3f}m (Scale Ratio: {scale_ratio:.3f})")
 
-        for f in range(f_start, f_end + 1):
-            bpy.context.scene.frame_set(f)
-            s_loc = pb_s_hip.matrix.translation
-            scaled_x = t_rest_hip_pos.x + s_loc.x * scale_ratio
-            scaled_y = t_rest_hip_pos.y + s_loc.y * scale_ratio
-            scaled_z = t_rest_hip_pos.z + (s_loc.z - s_leg_height) * scale_ratio
-            desired_pos = mathutils.Vector((scaled_x, scaled_y, scaled_z))
-            pb_align.location = mat_inv @ (desired_pos - pb_align.bone.head_local)
-            pb_align.keyframe_insert(data_path="location", frame=f)
+    # 4. Switch back to POSE mode & create clean Target Action
+    src_arm.data.pose_position = 'POSE'
+    tgt_arm.data.pose_position = 'POSE'
+    bpy.context.view_layer.update()
 
-    # 5. Bind Pose Constraints to Target Armature
-    bpy.context.view_layer.objects.active = tgt_arm
-    bpy.ops.object.mode_set(mode='POSE')
+    src_act = src_arm.animation_data.action if src_arm.animation_data else None
+    for a in list(bpy.data.actions):
+        if a != src_act:
+            bpy.data.actions.remove(a)
+
+    tgt_arm.animation_data_clear()
+    tgt_arm.animation_data_create()
+    new_action = bpy.data.actions.new("Baked_Animation")
+    tgt_arm.animation_data.action = new_action
 
     for pb in tgt_arm.pose.bones:
         pb.rotation_mode = 'QUATERNION'
 
+    # Build hierarchical evaluation order (root before children)
+    ordered_bones = []
+    def add_bone_rec(bone):
+        for s_name, t_name in bone_map.items():
+            if t_name == bone.name:
+                ordered_bones.append((s_name, t_name))
+                break
+        for ch in bone.children:
+            add_bone_rec(ch)
+
+    if t_hips_name and t_hips_name in tgt_arm.data.bones:
+        root_bone = tgt_arm.data.bones[t_hips_name]
+        add_bone_rec(root_bone)
+    else:
+        for root_b in [b for b in tgt_arm.data.bones if b.parent is None]:
+            add_bone_rec(root_b)
+
+    # Add any mapped bones not yet reached
+    reached = {tb for _, tb in ordered_bones}
     for s_name, t_name in bone_map.items():
-        pb_tgt = tgt_arm.pose.bones.get(t_name)
-        align_bone_name = f"ALIGN_{t_name}"
-        if pb_tgt and align_bone_name in src_arm.data.bones:
-            con_rot = pb_tgt.constraints.new('COPY_ROTATION')
-            con_rot.target = src_arm
-            con_rot.subtarget = align_bone_name
-            con_rot.target_space = 'WORLD'
-            con_rot.owner_space = 'WORLD'
+        if t_name not in reached:
+            ordered_bones.append((s_name, t_name))
 
-            if s_name == "Hips":
-                con_loc = pb_tgt.constraints.new('COPY_LOCATION')
-                con_loc.target = src_arm
-                con_loc.subtarget = "ALIGN_Hips_Loc"
-                con_loc.target_space = 'WORLD'
-                con_loc.owner_space = 'WORLD'
+    start_frame = int(src_act.frame_range[0]) if src_act else 0
+    end_frame = int(src_act.frame_range[1]) if src_act else 150
 
-    # 6. Determine frame range & Native C++ Action Bake
-    action = src_arm.animation_data.action if src_arm.animation_data else None
-    start_frame = int(action.frame_range[0]) if action else 0
-    end_frame = int(action.frame_range[1]) if action else 150
+    # Direct Matrix Frame Evaluation & Keyframing with A-Pose Virtual T-Pose Compensation
+    tgt_mat_world_inv = tgt_arm.matrix_world.inverted()
+    bpy.context.view_layer.objects.active = tgt_arm
+    bpy.ops.object.mode_set(mode='POSE')
 
-    print(f"Baking alignment action from frame {start_frame} to {end_frame}...")
-    bpy.ops.pose.select_all(action='SELECT')
-    bpy.ops.nla.bake(
-        frame_start=start_frame,
-        frame_end=end_frame,
-        only_selected=False,
-        visual_keying=True,
-        clear_constraints=True,
-        bake_types={'POSE'}
-    )
+    for f in range(start_frame, end_frame + 1):
+        bpy.context.scene.frame_set(f)
+        bpy.context.view_layer.update()
+
+        pb_s_hip = src_arm.pose.bones.get('Hips')
+        if pb_s_hip:
+            s_hip_curr_pos = (src_arm.matrix_world @ pb_s_hip.matrix).translation
+            t_world_hip = mathutils.Vector((
+                t_rest_hip_pos.x + s_hip_curr_pos.x * scale_ratio,
+                t_rest_hip_pos.y + s_hip_curr_pos.y * scale_ratio,
+                s_hip_curr_pos.z * scale_ratio
+            ))
+        else:
+            t_world_hip = t_rest_hip_pos
+
+        for s_name, t_name in ordered_bones:
+            pb_s = src_arm.pose.bones.get(s_name)
+            pb_t = tgt_arm.pose.bones.get(t_name)
+            if not pb_s or not pb_t:
+                continue
+
+            s_curr_rot = (src_arm.matrix_world @ pb_s.matrix).to_3x3()
+            offset_rot = m_offsets.get(s_name, mathutils.Matrix.Identity(3))
+
+            M_desired_world = (s_curr_rot @ offset_rot).to_4x4()
+
+            if s_name == 'Hips':
+                M_desired_world.translation = t_world_hip
+            else:
+                M_desired_world.translation = (tgt_arm.matrix_world @ pb_t.matrix).translation
+
+            pb_t.matrix = tgt_mat_world_inv @ M_desired_world
+            bpy.context.view_layer.update()
+
+            pb_t.keyframe_insert(data_path='rotation_quaternion', frame=f)
+            if s_name == 'Hips':
+                pb_t.keyframe_insert(data_path='location', frame=f)
 
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # 7. Remove source armature & temporary objects
-    for obj in list(bpy.data.objects):
-        if obj == src_arm or "proxy" in obj.name.lower() or "canonical" in obj.name.lower():
+    # 7. Remove source objects & temporary helpers
+    for obj in source_objs:
+        if obj in bpy.data.objects.values():
             bpy.data.objects.remove(obj, do_unlink=True)
+    
+    # Purge orphaned data blocks to keep export clean
+    for block in (bpy.data.meshes, bpy.data.armatures, bpy.data.actions):
+        for item in list(block):
+            if item.users == 0:
+                block.remove(item, do_unlink=True)
 
     # Clean up unlinked actions so the exported GLB only contains the baked character action
     if tgt_arm.animation_data and tgt_arm.animation_data.action:
@@ -293,8 +434,40 @@ def main():
         export_format='GLB',
         export_animations=True,
         export_current_frame=False,
-        export_draco_mesh_compression_enable=False
+        export_draco_mesh_compression_enable=False,
+        export_optimize_animation_size=False,
+        export_bake_animation=False
     )
+    
+    # Sanitize exported GLB to fix Three.js quaternion flipping (spikes/bone collapse)
+    try:
+        import json, struct
+        data = bytearray(open(str(preview_glb), 'rb').read())
+        chunk_len = struct.unpack('<I', data[12:16])[0]
+        gltf = json.loads(data[20:20+chunk_len].decode())
+        bin_start = 20 + chunk_len + 8
+        flips_fixed = 0
+        for anim in gltf.get('animations', []):
+            for channel in anim['channels']:
+                if channel['target']['path'] == 'rotation':
+                    sampler = anim['samplers'][channel['sampler']]
+                    acc = gltf['accessors'][sampler['output']]
+                    bv = gltf['bufferViews'][acc['bufferView']]
+                    start = bin_start + bv['byteOffset']
+                    end = start + bv['byteLength']
+                    vecs = [struct.unpack('<ffff', data[i:i+16]) for i in range(start, end, 16)]
+                    for i in range(1, len(vecs)):
+                        dot = sum(vecs[i][j]*vecs[i-1][j] for j in range(4))
+                        if dot < 0:
+                            vecs[i] = tuple(-x for x in vecs[i])
+                            struct.pack_into('<ffff', data, start + i*16, *vecs[i])
+                            flips_fixed += 1
+        if flips_fixed > 0:
+            open(str(preview_glb), 'wb').write(data)
+            print(f"Sanitized {flips_fixed} quaternion flips in {preview_glb.name}")
+    except Exception as e:
+        print(f"Failed to sanitize GLB quaternions: {e}")
+
     if output_file.suffix.lower() == ".fbx":
         bpy.ops.export_scene.fbx(
             filepath=str(output_file),

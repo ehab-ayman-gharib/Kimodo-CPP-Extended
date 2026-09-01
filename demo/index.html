@@ -1065,10 +1065,9 @@
       characterBadge.style.display = 'inline-flex';
       characterBadge.textContent = `⏳ Loading ${charName}…`;
 
-      // Only treat as FBX if the actual URL or formatHint is explicitly FBX and not a converted GLB
-      const isFbx = (formatHint === 'fbx' || (modelUrl && modelUrl.toLowerCase().endsWith('.fbx'))) && 
-                    !modelUrl.toLowerCase().endsWith('.glb') && 
-                    !modelUrl.includes('.glb');
+      // Determine loader based on URL extension
+      const urlClean = (modelUrl || '').toLowerCase().split('?')[0];
+      const isFbx = urlClean.endsWith('.fbx');
 
       const handleLoadedModel = (rootObj, clips = []) => {
         if (currentCharacterModel) {
@@ -1106,18 +1105,30 @@
           }
         });
 
-        // Auto-normalize scale if FBX uses centimeters (height > 30)
-        const initialBox = new THREE.Box3().setFromObject(currentCharacterModel);
-        const initialSize = initialBox.getSize(new THREE.Vector3());
-        if (initialSize.y > 30) {
-          currentCharacterModel.scale.setScalar(0.01);
-        }
-
-        // Auto-frame camera based on model bounding box
+        currentCharacterModel.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(currentCharacterModel);
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
 
+        // Auto-normalize scale if model units are centimeters (e.g. height > 25 units)
+        if (size.y > 25 || size.z > 25 || size.x > 25) {
+          currentCharacterModel.scale.setScalar(0.01);
+          currentCharacterModel.updateMatrixWorld(true);
+          box.setFromObject(currentCharacterModel);
+          box.getSize(size);
+          box.getCenter(center);
+        }
+
+        // Ground feet onto floor grid (y = 0)
+        if (Math.abs(box.min.y) > 0.001) {
+          currentCharacterModel.position.y -= box.min.y;
+          currentCharacterModel.updateMatrixWorld(true);
+          box.setFromObject(currentCharacterModel);
+          box.getSize(size);
+          box.getCenter(center);
+        }
+
+        // Auto-frame camera based on model bounding box
         const maxDim = Math.max(size.x, size.y, size.z);
         const fov = threeCamera.fov * (Math.PI / 180);
         let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;

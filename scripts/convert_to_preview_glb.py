@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.resolve()))
 import bpy
+import mathutils
 
 def main():
     argv = sys.argv
@@ -30,6 +32,35 @@ def main():
             bpy.ops.wm.obj_import(filepath=str(in_path))
         except Exception:
             bpy.ops.import_scene.obj(filepath=str(in_path))
+
+    # Check if target is a 3ds Max Biped rig. If so, delegate to convert_biped_to_standard
+    arm_objs = [o for o in bpy.data.objects if o.type == 'ARMATURE']
+    is_biped = any(any('bip001' in b.name.lower() or 'bip01' in b.name.lower() for b in arm.data.bones) for arm in arm_objs)
+    if is_biped:
+        from convert_biped_to_standard import convert_biped
+        convert_biped(in_path, out_path)
+        sys.exit(0)
+
+    # Remove non-character extra objects (like default cube, camera, lights, extra icospheres)
+    for o in list(bpy.data.objects):
+        if o.name in ['Camera', 'Light', 'Cube'] or 'ico' in o.name.lower():
+            bpy.data.objects.remove(o, do_unlink=True)
+
+    # Clear any corrupt/split FBX action tracks so preview displays the clean, pristine Rest Pose / T-Pose
+    for a in list(bpy.data.actions):
+        bpy.data.actions.remove(a)
+    for o in bpy.data.objects:
+        if o.animation_data:
+            o.animation_data_clear()
+
+    # Apply root rotation transforms so character stands upright in GLTF/GLB preview (only needed for FBX)
+    if ext == ".fbx":
+        for o in bpy.data.objects:
+            o.select_set(True)
+        arm_objs = [o for o in bpy.data.objects if o.type == 'ARMATURE']
+        if arm_objs:
+            bpy.context.view_layer.objects.active = arm_objs[0]
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
     # Fix transparency and ensure opaque textures
     for mat in bpy.data.materials:
