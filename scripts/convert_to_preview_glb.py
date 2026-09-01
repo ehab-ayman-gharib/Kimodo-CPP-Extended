@@ -35,7 +35,7 @@ def main():
 
     # Check if target is a 3ds Max Biped rig. If so, delegate to convert_biped_to_standard
     arm_objs = [o for o in bpy.data.objects if o.type == 'ARMATURE']
-    is_biped = any(any('bip001' in b.name.lower() or 'bip01' in b.name.lower() for b in arm.data.bones) for arm in arm_objs)
+    is_biped = any(any(b.name.lower().startswith('bip') and any(k in b.name.lower() for k in ['pelvis', 'spine', 'thigh', 'calf', 'upperarm', 'forearm']) for b in arm.data.bones) for arm in arm_objs)
     if is_biped:
         from convert_biped_to_standard import convert_biped
         convert_biped(in_path, out_path)

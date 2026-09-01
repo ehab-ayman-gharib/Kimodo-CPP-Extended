@@ -418,8 +418,11 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
         elif url.startswith("/api/preview_model/download/"):
             parts = url.strip("/").split("/")
             if len(parts) == 5:
-                _, _, _, pid, filename = parts
+                _, _, _, pid, raw_filename = parts
+                filename = urllib.parse.unquote(raw_filename)
                 target = OUTPUT_DIR / "_preview" / pid / filename
+                if not target.is_file():
+                    target = OUTPUT_DIR / "_preview" / pid / raw_filename
                 if target.is_file():
                     data = target.read_bytes()
                     self.send_response(200)
@@ -432,8 +435,11 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
         elif url.startswith("/api/retarget/download/"):
             parts = url.strip("/").split("/")
             if len(parts) == 5:
-                _, _, _, aid, filename = parts
+                _, _, _, aid, raw_filename = parts
+                filename = urllib.parse.unquote(raw_filename)
                 target = OUTPUT_DIR / aid / filename
+                if not target.is_file():
+                    target = OUTPUT_DIR / aid / raw_filename
                 if target.is_file():
                     data = target.read_bytes()
                     self.send_response(200)
@@ -528,14 +534,15 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             content_type = self.headers.get("Content-Type", "")
             aid = query.get("animation_id", [""])[0]
             out_format = query.get("format", ["glb"])[0].lower()
-            filename = query.get("filename", ["character.fbx"])[0]
+            raw_filename = query.get("filename", ["character.fbx"])[0]
+            filename = urllib.parse.unquote(raw_filename)
 
             try:
                 if "application/json" in content_type:
                     body = self.rfile.read(length)
                     req = json.loads(body.decode('utf-8'))
                     aid = req.get("animation_id", aid)
-                    filename = req.get("filename", filename)
+                    filename = urllib.parse.unquote(req.get("filename", filename))
                     out_format = req.get("format", out_format)
                     file_bytes = base64.b64decode(req.get("file_data", ""))
                 else:
@@ -567,7 +574,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 if file_bytes is not None:
                     char_path.write_bytes(file_bytes)
 
-                clean_stem = Path(filename).stem
+                clean_stem = Path(filename).stem.replace(" ", "_")
                 out_filename = f"{clean_stem}_animated.{out_format}"
                 out_path = item_dir / out_filename
 
@@ -630,7 +637,8 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == "/api/preview_model":
             length = int(self.headers.get("Content-Length", 0))
-            filename = query.get("filename", ["character.fbx"])[0]
+            raw_filename = query.get("filename", ["character.fbx"])[0]
+            filename = urllib.parse.unquote(raw_filename)
             pid = secrets.token_hex(6)
             prev_dir = OUTPUT_DIR / "_preview" / pid
             prev_dir.mkdir(parents=True, exist_ok=True)

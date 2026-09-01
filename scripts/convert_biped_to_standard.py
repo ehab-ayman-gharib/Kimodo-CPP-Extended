@@ -42,6 +42,17 @@ BIPED_TO_MIXAMO = {
     'Bip001 R Finger4': 'mixamorig:RightHandPinky1', 'Bip001 R Finger41': 'mixamorig:RightHandPinky2', 'Bip001 R Finger42': 'mixamorig:RightHandPinky3',
 }
 
+def get_biped_mixamo_name(b_name: str) -> str:
+    if b_name in BIPED_TO_MIXAMO:
+        return BIPED_TO_MIXAMO[b_name]
+    # Handle custom biped prefixes like "BipTrump Pelvis", "BipHero Spine", "Bip01 L Arm"
+    parts = b_name.split(' ', 1)
+    if len(parts) == 2 and parts[0].lower().startswith('bip'):
+        generic_bip = f"Bip001 {parts[1]}"
+        if generic_bip in BIPED_TO_MIXAMO:
+            return BIPED_TO_MIXAMO[generic_bip]
+    return b_name
+
 def convert_biped(input_path: Path, output_path: Path):
     clear_scene()
     print(f"[Biped Converter] Loading: {input_path}")
@@ -73,12 +84,12 @@ def convert_biped(input_path: Path, output_path: Path):
     children_map = {}
 
     for b in old_arm.data.bones:
-        m_name = BIPED_TO_MIXAMO.get(b.name, b.name)
+        m_name = get_biped_mixamo_name(b.name)
         # World position scaled to true meters
         h_w = old_arm.matrix_world @ b.head_local
         bone_heads[m_name] = h_w
         if b.parent:
-            p_name = BIPED_TO_MIXAMO.get(b.parent.name, b.parent.name)
+            p_name = get_biped_mixamo_name(b.parent.name)
             bone_parents[m_name] = p_name
             children_map.setdefault(p_name, []).append(m_name)
 
@@ -164,7 +175,7 @@ def convert_biped(input_path: Path, output_path: Path):
 
         # Map vertex groups
         for vg in m.vertex_groups:
-            m_vg_name = BIPED_TO_MIXAMO.get(vg.name, vg.name)
+            m_vg_name = get_biped_mixamo_name(vg.name)
             new_vg = new_m.vertex_groups.new(name=m_vg_name)
             for v_idx in range(len(m.data.vertices)):
                 try:
