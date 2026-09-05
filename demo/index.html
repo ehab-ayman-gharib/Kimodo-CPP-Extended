@@ -1264,10 +1264,9 @@
       slider.value = frame;
       document.querySelector('#frameText').textContent = selected ? `frame ${frame + 1} / ${selected.frames}` : 'No animation';
 
-      // Sync 3D Mesh Character animation pose
-      if (threeMixer) {
-        threeMixer.setTime(frame / 30.0);
-        applyArmClearance();
+      // Sync 3D Mesh Character animation pose when scrubbing or paused
+      if (typeof syncCharacterAnimation === 'function' && !playing && !isRecordingTurntable) {
+        syncCharacterAnimation(frame / 30.0);
       }
     }
 
@@ -1288,9 +1287,8 @@
         }
         updateCamera(t);
         draw();
-        if (threeMixer && !isRecordingTurntable) {
-          threeMixer.setTime((frame + playbackBlend) / 30.0);
-          applyArmClearance();
+        if (typeof syncCharacterAnimation === 'function' && playing && !isRecordingTurntable) {
+          syncCharacterAnimation((frame + playbackBlend) / 30.0);
         }
       }
       if (threeControls && !isRecordingTurntable) {
@@ -1387,18 +1385,24 @@
 
     function applyArmClearance() {
       if (!currentModelForward) return;
-      if (!threeMixer) {
-        if (currentLeftArmBone && currentLeftArmBone._restQuat) {
-          currentLeftArmBone.quaternion.copy(currentLeftArmBone._restQuat);
-        }
-        if (currentRightArmBone && currentRightArmBone._restQuat) {
-          currentRightArmBone.quaternion.copy(currentRightArmBone._restQuat);
-        }
-        if (currentLeftForeArmBone && currentLeftForeArmBone._restQuat) {
-          currentLeftForeArmBone.quaternion.copy(currentLeftForeArmBone._restQuat);
-        }
-        if (currentRightForeArmBone && currentRightForeArmBone._restQuat) {
-          currentRightForeArmBone.quaternion.copy(currentRightForeArmBone._restQuat);
+
+      const bones = [
+        currentLeftArmBone,
+        currentRightArmBone,
+        currentLeftForeArmBone,
+        currentRightForeArmBone
+      ];
+
+      // Always restore clean un-offset orientation first (base animation pose or rest pose)
+      // This ensures repeated calls (e.g. while paused or scrubbing) are 100% idempotent
+      for (let i = 0; i < bones.length; i++) {
+        const b = bones[i];
+        if (b) {
+          if (b._baseAnimQuat) {
+            b.quaternion.copy(b._baseAnimQuat);
+          } else if (b._restQuat) {
+            b.quaternion.copy(b._restQuat);
+          }
         }
       }
 
@@ -1449,6 +1453,42 @@
       }
     }
 
+    function syncCharacterAnimation(time) {
+      if (!threeMixer) {
+        applyArmClearance();
+        return;
+      }
+      const bones = [
+        currentLeftArmBone,
+        currentRightArmBone,
+        currentLeftForeArmBone,
+        currentRightForeArmBone
+      ];
+
+      // Restore clean base orientation before mixer evaluation
+      // (prevents Three.js PropertyMixer dirty-checking from retaining previous offsets)
+      for (let i = 0; i < bones.length; i++) {
+        const b = bones[i];
+        if (b && b._baseAnimQuat) {
+          b.quaternion.copy(b._baseAnimQuat);
+        }
+      }
+
+      // Evaluate animation tracks
+      threeMixer.setTime(time);
+
+      // Cache clean un-offset keyframe rotation
+      for (let i = 0; i < bones.length; i++) {
+        const b = bones[i];
+        if (b) {
+          b._baseAnimQuat = b.quaternion.clone();
+        }
+      }
+
+      // Apply clearance offset
+      applyArmClearance();
+    }
+
     function resetArmClearanceSlider() {
       armClearanceDeg = 0;
       forearmClearanceDeg = 0;
@@ -1457,22 +1497,9 @@
       if (forearmClearanceSlider) forearmClearanceSlider.value = 0;
       if (forearmClearanceVal) forearmClearanceVal.textContent = '0°';
       if (rebakeClearanceBtn) rebakeClearanceBtn.style.display = 'none';
-      if (!threeMixer) {
-        if (currentLeftArmBone && currentLeftArmBone._restQuat) {
-          currentLeftArmBone.quaternion.copy(currentLeftArmBone._restQuat);
-        }
-        if (currentRightArmBone && currentRightArmBone._restQuat) {
-          currentRightArmBone.quaternion.copy(currentRightArmBone._restQuat);
-        }
-        if (currentLeftForeArmBone && currentLeftForeArmBone._restQuat) {
-          currentLeftForeArmBone.quaternion.copy(currentLeftForeArmBone._restQuat);
-        }
-        if (currentRightForeArmBone && currentRightForeArmBone._restQuat) {
-          currentRightForeArmBone.quaternion.copy(currentRightForeArmBone._restQuat);
-        }
-        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
-          threeRenderer.render(threeScene, threeCamera);
-        }
+      applyArmClearance();
+      if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+        threeRenderer.render(threeScene, threeCamera);
       }
     }
 
@@ -1506,12 +1533,7 @@
         updateRebakeBtnState();
 
         // Apply clearance immediately to current frame
-        if (threeMixer) {
-          threeMixer.setTime(frame / 30.0);
-          applyArmClearance();
-        } else {
-          applyArmClearance();
-        }
+        applyArmClearance();
 
         if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
           threeRenderer.render(threeScene, threeCamera);
@@ -1527,12 +1549,7 @@
         updateRebakeBtnState();
 
         // Apply clearance immediately to current frame
-        if (threeMixer) {
-          threeMixer.setTime(frame / 30.0);
-          applyArmClearance();
-        } else {
-          applyArmClearance();
-        }
+        applyArmClearance();
 
         if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
           threeRenderer.render(threeScene, threeCamera);
@@ -1619,8 +1636,7 @@
       }
       currentAction = threeMixer.clipAction(currentGltfClips[idx]);
       currentAction.reset().play();
-      threeMixer.setTime(frame / 30.0);
-      applyArmClearance();
+      syncCharacterAnimation(frame / 30.0);
       clipSelect.value = idx;
       console.log(`[3D Viewport] Active Clip [${idx}]: "${currentGltfClips[idx].name}" (${currentGltfClips[idx].duration.toFixed(2)}s)`);
     }
@@ -1877,10 +1893,22 @@
         currentRightArmBone = armBones.rightArm;
         currentLeftForeArmBone = armBones.leftForearm;
         currentRightForeArmBone = armBones.rightForearm;
-        if (currentLeftArmBone) currentLeftArmBone._restQuat = currentLeftArmBone.quaternion.clone();
-        if (currentRightArmBone) currentRightArmBone._restQuat = currentRightArmBone.quaternion.clone();
-        if (currentLeftForeArmBone) currentLeftForeArmBone._restQuat = currentLeftForeArmBone.quaternion.clone();
-        if (currentRightForeArmBone) currentRightForeArmBone._restQuat = currentRightForeArmBone.quaternion.clone();
+        if (currentLeftArmBone) {
+          currentLeftArmBone._restQuat = currentLeftArmBone.quaternion.clone();
+          currentLeftArmBone._baseAnimQuat = currentLeftArmBone.quaternion.clone();
+        }
+        if (currentRightArmBone) {
+          currentRightArmBone._restQuat = currentRightArmBone.quaternion.clone();
+          currentRightArmBone._baseAnimQuat = currentRightArmBone.quaternion.clone();
+        }
+        if (currentLeftForeArmBone) {
+          currentLeftForeArmBone._restQuat = currentLeftForeArmBone.quaternion.clone();
+          currentLeftForeArmBone._baseAnimQuat = currentLeftForeArmBone.quaternion.clone();
+        }
+        if (currentRightForeArmBone) {
+          currentRightForeArmBone._restQuat = currentRightForeArmBone.quaternion.clone();
+          currentRightForeArmBone._baseAnimQuat = currentRightForeArmBone.quaternion.clone();
+        }
         currentModelForward = new THREE.Vector3(fwdX, 0, fwdZ).normalize();
 
         if (armClearanceControl) armClearanceControl.style.display = 'flex';
@@ -1912,7 +1940,9 @@
         }
 
         onThreeResize();
-        if (Math.abs(armClearanceDeg) > 0.001 || Math.abs(forearmClearanceDeg) > 0.001) {
+        if (threeMixer) {
+          syncCharacterAnimation(frame / 30.0);
+        } else {
           applyArmClearance();
         }
         if (typeof resetTurntableVideoState === 'function') resetTurntableVideoState();
@@ -2251,6 +2281,14 @@
       last = performance.now();
       playbackBlend = 0;
       e.target.textContent = playing ? 'Pause' : 'Play';
+      if (!playing) {
+        if (typeof syncCharacterAnimation === 'function') {
+          syncCharacterAnimation(frame / 30.0);
+        }
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      }
     };
 
     slider.oninput = () => {
@@ -2519,7 +2557,7 @@
       playbackBlend = 0;
       last = performance.now();
       if (threeMixer) {
-        threeMixer.setTime(0);
+        syncCharacterAnimation(0);
       }
       if (currentAction) {
         currentAction.time = 0;
@@ -2692,8 +2730,7 @@
         // Keep character animation time frame-perfect in sync with turntable progress
         const animTime = progress * duration;
         if (threeMixer) {
-          threeMixer.setTime(animTime);
-          applyArmClearance();
+          syncCharacterAnimation(animTime);
         }
         if (selected && selected.frames) {
           frame = Math.min(selected.frames - 1, Math.floor(progress * selected.frames));
