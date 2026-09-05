@@ -96,6 +96,8 @@ def parse_args():
     char_path = None
     motion_path = None
     output_path = None
+    arm_clearance = 0.0
+    forearm_clearance = 0.0
     
     for i in range(len(argv)):
         if argv[i] in ("-c", "--character") and i + 1 < len(argv):
@@ -104,8 +106,18 @@ def parse_args():
             motion_path = argv[i + 1]
         elif argv[i] in ("-o", "--output") and i + 1 < len(argv):
             output_path = argv[i + 1]
+        elif argv[i] in ("--arm-clearance",) and i + 1 < len(argv):
+            try:
+                arm_clearance = float(argv[i + 1])
+            except ValueError:
+                arm_clearance = 0.0
+        elif argv[i] in ("--forearm-clearance",) and i + 1 < len(argv):
+            try:
+                forearm_clearance = float(argv[i + 1])
+            except ValueError:
+                forearm_clearance = 0.0
             
-    return char_path, motion_path, output_path
+    return char_path, motion_path, output_path, arm_clearance, forearm_clearance
 
 def clear_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -117,7 +129,7 @@ def find_armature(exclude=None):
     return None
 
 def main():
-    char_path, motion_path, output_path = parse_args()
+    char_path, motion_path, output_path, arm_clearance, forearm_clearance = parse_args()
     if not char_path or not motion_path:
         print("Usage: blender -b -P scripts/bake_to_character.py -- --character <char.fbx/glb> --motion <kimodo_clip_dir_or_glb> [--output <output.glb>]")
         sys.exit(1)
@@ -338,6 +350,19 @@ def main():
                     if tb.lower().endswith(f"_{raw_name.lower()}") or tb.lower().endswith(raw_name.lower()):
                         matched = tb
                         break
+            # 3. Fallback to candidate patterns for Rigify and custom humanoid rigs (e.g., upper_arm.L, forearm.L)
+            if not matched and s_name in BONE_CANDIDATES:
+                for cand in BONE_CANDIDATES[s_name]:
+                    for tb in tgt_bone_names:
+                        if tb in bone_map.values():
+                            continue
+                        tb_norm = normalize_name(tb)
+                        c_norm = normalize_name(cand)
+                        if tb.lower() == cand.lower() or tb_norm == c_norm:
+                            matched = tb
+                            break
+                    if matched:
+                        break
             if matched:
                 bone_map[s_name] = matched
 
@@ -374,6 +399,26 @@ def main():
         p_r_el = (tgt_arm.matrix_world @ tgt_arm.pose.bones[r_fa_t_name].matrix).translation
         v_r_rest = (p_r_el - p_r_sh).normalized()
         q_r_lift = v_r_rest.rotation_difference(mathutils.Vector((-1, 0, 0)))
+
+    # Calculate coronal abduction matrices for custom arm and forearm clearance
+    R_clear_l = mathutils.Matrix.Identity(3)
+    R_clear_r = mathutils.Matrix.Identity(3)
+    R_clear_fa_l = mathutils.Matrix.Identity(3)
+    R_clear_fa_r = mathutils.Matrix.Identity(3)
+    if (arm_clearance != 0.0 or forearm_clearance != 0.0) and 'p_l_sh' in locals() and 'p_r_sh' in locals():
+        lateral = p_l_sh - p_r_sh
+        lateral.z = 0.0
+        if lateral.length > 0.001:
+            lateral.normalize()
+            # Up in Blender is (0, 0, 1). Up x Lateral = Forward vector!
+            fwd = mathutils.Vector((0, 0, 1)).cross(lateral).normalized()
+            if arm_clearance != 0.0:
+                R_clear_l = mathutils.Matrix.Rotation(math.radians(arm_clearance), 3, fwd)
+                R_clear_r = mathutils.Matrix.Rotation(-math.radians(arm_clearance), 3, fwd)
+            if forearm_clearance != 0.0:
+                R_clear_fa_l = mathutils.Matrix.Rotation(math.radians(forearm_clearance), 3, fwd)
+                R_clear_fa_r = mathutils.Matrix.Rotation(-math.radians(forearm_clearance), 3, fwd)
+            print(f"[Retarget] Custom arm clearance: {arm_clearance:+.1f}°, forearm: {forearm_clearance:+.1f}° around forward vector {fwd.to_tuple(3)}")
 
     for s_name, t_name in bone_map.items():
         pb_s = src_arm.pose.bones.get(s_name)
@@ -487,7 +532,16 @@ def main():
             s_curr_rot = (src_arm.matrix_world @ pb_s.matrix).to_3x3()
             offset_rot = m_offsets.get(s_name, mathutils.Matrix.Identity(3))
 
-            M_desired_world = (s_curr_rot @ offset_rot).to_4x4()
+            if s_name == 'LeftArm' and arm_clearance != 0.0:
+                M_desired_world = (R_clear_l @ s_curr_rot @ offset_rot).to_4x4()
+            elif s_name in ('LeftForeArm', 'LeftHand') and (arm_clearance != 0.0 or forearm_clearance != 0.0):
+                M_desired_world = (R_clear_l @ R_clear_fa_l @ s_curr_rot @ offset_rot).to_4x4()
+            elif s_name == 'RightArm' and arm_clearance != 0.0:
+                M_desired_world = (R_clear_r @ s_curr_rot @ offset_rot).to_4x4()
+            elif s_name in ('RightForeArm', 'RightHand') and (arm_clearance != 0.0 or forearm_clearance != 0.0):
+                M_desired_world = (R_clear_r @ R_clear_fa_r @ s_curr_rot @ offset_rot).to_4x4()
+            else:
+                M_desired_world = (s_curr_rot @ offset_rot).to_4x4()
 
             if s_name == 'Hips':
                 M_desired_world.translation = t_world_hip

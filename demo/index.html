@@ -484,6 +484,123 @@
       z-index: 5;
     }
 
+    .viewport-header-left {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 15;
+    }
+
+    .viewport-header-left .viewport-badge {
+      position: static;
+    }
+
+    .viewport-top-controls {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .arm-clearance-control {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(13, 18, 24, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--la-line);
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+    }
+
+    .clip-control {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(13, 18, 24, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--la-line);
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+    }
+
+    /* Dual View Mode: Guarantee 3D Character View clearance sliders are always 100% visible and unclipped */
+    .stage-viewport-area.mode-dual .viewport-top-controls {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      top: 10px;
+      right: 10px;
+      max-width: calc(100% - 20px);
+    }
+
+    .stage-viewport-area.mode-dual .clip-control {
+      order: 1;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+    }
+
+    .stage-viewport-area.mode-dual .arm-clearance-control {
+      order: 2;
+      padding: 3px 8px;
+    }
+
+    .stage-viewport-area.mode-dual .viewport-header-left {
+      top: 10px;
+      left: 10px;
+      max-width: calc(100% - 220px);
+    }
+
+    .stage-viewport-area.mode-dual #meshBadge {
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-unload-character {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(229, 62, 62, 0.16);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(229, 62, 62, 0.45);
+      color: #fc8181;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.15s ease;
+      z-index: 15;
+    }
+
+    .btn-unload-character:hover {
+      background: rgba(229, 62, 62, 0.32);
+      border-color: #e53e3e;
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
+    }
+
+    .btn-unload-character:active {
+      transform: translateY(0);
+    }
+
     .viewport-overlay-placeholder {
       position: absolute;
       inset: 0;
@@ -529,6 +646,157 @@
       height: 32px;
       object-fit: contain;
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    /* Turntable 360 Recording & Floating Render Overlay */
+    .mesh-viewport-turntable-bar {
+      position: absolute;
+      bottom: 18px;
+      right: 18px;
+      z-index: 25;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(8, 14, 22, 0.9);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(59, 211, 208, 0.35);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7), 0 0 18px rgba(59, 211, 208, 0.15);
+      transition: all 0.2s ease;
+      pointer-events: auto;
+    }
+
+    .btn-turntable-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fff;
+      background: linear-gradient(135deg, #ff5e3a, #ff2a6d);
+      border: 1px solid rgba(255, 94, 58, 0.5);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 42, 109, 0.35);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+    }
+
+    .btn-turntable-download:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 42, 109, 0.55);
+      filter: brightness(1.12);
+    }
+
+    .btn-turntable-download.ready-download {
+      background: linear-gradient(135deg, var(--la-cyan-2), var(--la-cyan));
+      border: 1px solid var(--la-cyan);
+      color: #041014;
+      box-shadow: 0 4px 18px rgba(59, 211, 208, 0.45);
+    }
+
+    .btn-turntable-download.ready-download:hover:not(:disabled) {
+      box-shadow: 0 6px 24px rgba(59, 211, 208, 0.65);
+      filter: brightness(1.08);
+    }
+
+    .btn-turntable-download:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-turntable-record {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 8px;
+      background: rgba(18, 26, 38, 0.9);
+      color: var(--la-cyan);
+      border: 1px solid rgba(59, 211, 208, 0.35);
+      font-size: 0.80rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-turntable-record:hover:not(:disabled) {
+      background: rgba(26, 38, 54, 0.95);
+      border-color: var(--la-cyan);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(59, 211, 208, 0.25);
+    }
+
+    .btn-turntable-record:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-rebake-clearance {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, rgba(59, 211, 208, 0.25), rgba(159, 122, 234, 0.25));
+      border: 1px solid var(--la-cyan);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-rebake-clearance:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--la-cyan), var(--la-violet));
+      color: #041014;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(59, 211, 208, 0.4);
+    }
+
+    .btn-rebake-clearance:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+
+    @keyframes recPulse {
+      0% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.8); }
+      70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 7px rgba(229, 62, 62, 0); }
+      100% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+    }
+
+    .turntable-hud {
+      display: none;
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      background: rgba(10, 14, 20, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(229, 62, 62, 0.5);
+      border-radius: 30px;
+      padding: 7px 18px;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px rgba(229, 62, 62, 0.25);
     }
 
     @media (max-width: 900px) {
@@ -586,8 +854,8 @@
 
       <!-- Custom Character Baker -->
       <section class="card promptbox" style="gap:10px">
-        <div class="eyebrow" style="color:var(--la-cyan-2);margin-bottom:0">Lens Studio & Unity Rig Baker</div>
-        <label style="font-weight:700;font-size:0.92rem;color:var(--la-text)">Bake to Custom Character Mesh</label>
+        <div class="eyebrow" style="color:var(--la-cyan-2);margin-bottom:0">Character Retargeting & Rig Baker</div>
+        <label style="font-weight:700;font-size:0.92rem;color:var(--la-text)">Bake to 3D Character Mesh</label>
         <div class="hint" style="margin-bottom:2px">Upload your character model (.fbx or .glb) to bake the active motion
           directly onto its rig:</div>
 
@@ -596,8 +864,8 @@
         <div style="display:flex;gap:8px">
           <select id="charFormat"
             style="flex:1;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem">
-            <option value="glb">GLB (Lens Studio / Web 3D)</option>
-            <option value="fbx">FBX (Unity / Unreal)</option>
+            <option value="glb">Standard GLB (glTF 2.0)</option>
+            <option value="fbx">Standard FBX (Humanoid)</option>
           </select>
           <button id="bakeBtn" class="btn-violet" style="flex:1.1;padding:7px 12px;font-size:0.82rem">
             Bake to Mesh
@@ -668,14 +936,73 @@
 
         <!-- 2. Retargeted 3D Mesh Three.js Viewport -->
         <div id="meshViewport" class="viewport-panel">
-          <span id="meshBadge" class="viewport-badge">👤 Retargeted 3D Mesh</span>
+          <!-- Viewport Header Left: Badge + Unload Button -->
+          <div class="viewport-header-left">
+            <span id="meshBadge" class="viewport-badge">👤 Retargeted 3D Mesh</span>
+            <button id="unloadCharBtn" type="button" class="btn-unload-character" style="display:none" title="Unload the current character model">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Unload</span>
+            </button>
+          </div>
 
-          <!-- Active Clip Switcher Dropdown -->
-          <div id="clipControl"
-            style="display:none;align-items:center;gap:6px;position:absolute;top:14px;right:14px;z-index:10;background:rgba(13,18,24,0.9);backdrop-filter:blur(8px);border:1px solid var(--la-line);padding:3px 8px;border-radius:6px;">
-            <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2)">Active Clip:</span>
-            <select id="clipSelect"
-              style="padding:2px 6px;font-size:0.75rem;border:0;background:transparent;color:var(--la-text);cursor:pointer;outline:none;"></select>
+          <!-- Viewport Header Controls (Arm Clearance & Clip selector) -->
+          <div id="viewportTopControls" class="viewport-top-controls">
+            <!-- Arm & Forearm Clearance Controls & Re-bake Button -->
+            <div id="armClearanceControl" class="arm-clearance-control">
+              <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Arm:</span>
+              <input id="armClearanceSlider" type="range" min="-10" max="30" step="1" value="0"
+                style="width:58px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
+                title="Adjust upper arm coronal abduction distance (-10° closer, +30° wider)">
+              <span id="armClearanceVal" style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--la-text);min-width:26px;text-align:right">0°</span>
+
+              <div style="width:1px;height:14px;background:var(--la-line);margin:0 2px"></div>
+
+              <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Forearm:</span>
+              <input id="forearmClearanceSlider" type="range" min="-15" max="30" step="1" value="0"
+                style="width:58px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
+                title="Adjust forearm coronal abduction distance (-15° closer, +30° wider)">
+              <span id="forearmClearanceVal" style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--la-text);min-width:26px;text-align:right">0°</span>
+
+              <button id="rebakeClearanceBtn" type="button" class="btn-rebake-clearance" style="display:none"
+                title="Bake this arm & forearm clearance offset into the exported .glb/.fbx model">
+                <span>🔄 Re-bake</span>
+              </button>
+            </div>
+
+            <!-- Clip Selector -->
+            <div id="clipControl" class="clip-control">
+              <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Active Clip:</span>
+              <select id="clipSelect"
+                style="padding:2px 6px;font-size:0.75rem;border:0;background:transparent;color:var(--la-text);cursor:pointer;outline:none;max-width:140px;"></select>
+            </div>
+          </div>
+
+          <!-- Turntable Recording HUD -->
+          <div id="turntableRecordingHUD" class="turntable-hud">
+            <span class="pulse-rec-dot" style="width:10px;height:10px;border-radius:50%;background:#e53e3e;display:inline-block;animation:recPulse 1s infinite"></span>
+            <span style="font-size:0.82rem;font-weight:700;color:#fff;letter-spacing:0.02em">Recording 360° Turntable…</span>
+            <span id="turntableProgressText" style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--la-cyan);font-weight:600">0%</span>
+            <div style="width:70px;height:6px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden">
+              <div id="turntableProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#e53e3e,var(--la-cyan));transition:width 0.1s linear"></div>
+            </div>
+            <button id="cancelTurntableBtn" type="button" style="background:transparent;border:0;color:var(--la-muted);cursor:pointer;font-size:0.75rem;padding:2px 6px;border-radius:4px">✕ Cancel</button>
+          </div>
+
+          <!-- Floating Turntable Controls Directly on 3D Character View Render (Only visible when animation is baked) -->
+          <div id="meshViewportTurntableBar" class="mesh-viewport-turntable-bar" style="display:none">
+            <button id="viewportDownloadTurntableBtn" type="button" class="btn-turntable-download"
+              title="Record and download a clean 360° orbiting turntable video">
+              <span class="btn-icon">💾</span>
+              <span id="viewportDownloadTurntableText">Download 360° Video</span>
+            </button>
+            <button id="viewportTurntableBtn" type="button" class="btn-turntable-record"
+              title="Orbit and record a fresh 360° turntable video">
+              <span>⏺️</span>
+              <span id="viewportRecordTurntableText">Record 360°</span>
+            </button>
           </div>
 
           <!-- Placeholder Overlay when no character baked -->
@@ -699,11 +1026,11 @@
       <div class="controls">
         <button id="play" style="padding:8px 16px">Pause</button>
         <button id="reset" style="background:#17222c;color:var(--la-text);padding:8px 14px">Reset view</button>
-        <a id="download" class="download" hidden download style="padding:8px 14px;font-size:0.82rem">Download Standard
+        <a id="download" class="download" hidden download style="padding:8px 14px;font-size:0.82rem">Download Skeleton
           GLB</a>
         <a id="downloadMixamo" class="download" hidden download
           style="background:linear-gradient(135deg,var(--la-violet),var(--la-cyan));padding:8px 14px;font-size:0.82rem">Download
-          Mixamo GLB</a>
+          Humanoid GLB</a>
         <input id="frame" type="range" min="0" value="0" step="1">
         <span id="frameText" class="readout" style="min-width:110px;font-family:'JetBrains Mono',monospace"></span>
         <span class="hint" style="font-size:0.75rem">Drag: Orbit · Wheel: Zoom · Shift/Right-drag: Pan</span>
@@ -940,6 +1267,7 @@
       // Sync 3D Mesh Character animation pose
       if (threeMixer) {
         threeMixer.setTime(frame / 30.0);
+        applyArmClearance();
       }
     }
 
@@ -948,38 +1276,341 @@
         const interval = 1000 / 30;
         if (!last) last = t;
         if (playing) {
-          while (t - last >= interval) {
-            frame = (frame + 1) % selected.frames;
-            last += interval;
+          if (!isRecordingTurntable) {
+            while (t - last >= interval) {
+              frame = (frame + 1) % selected.frames;
+              last += interval;
+            }
+            playbackBlend = Math.min(1, (t - last) / interval);
           }
-          playbackBlend = Math.min(1, (t - last) / interval);
         } else {
           playbackBlend = 0;
         }
         updateCamera(t);
         draw();
-        if (threeMixer) {
+        if (threeMixer && !isRecordingTurntable) {
           threeMixer.setTime((frame + playbackBlend) / 30.0);
+          applyArmClearance();
         }
       }
-      if (threeControls) {
+      if (threeControls && !isRecordingTurntable) {
         threeControls.update();
       }
-      if (threeRenderer && threeScene && threeCamera) {
+      if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
         threeRenderer.render(threeScene, threeCamera);
       }
       requestAnimationFrame(tick);
     }
 
     // --- 3D CHARACTER RETARGETED MESH (THREE.JS) ---
-    let threeScene, threeCamera, threeRenderer, threeControls, threeMixer, currentAction, currentGltfClips = [];
+    let threeScene, threeCamera, threeRenderer, threeControls, threeGridHelper, threeMixer, currentAction, currentGltfClips = [];
+    let isRecordingTurntable = false;
     let currentCharacterModel;
+    let currentLeftArmBone = null;
+    let currentRightArmBone = null;
+    let currentLeftForeArmBone = null;
+    let currentRightForeArmBone = null;
+    let currentModelForward = null;
+    let armClearanceDeg = 0;
+    let forearmClearanceDeg = 0;
+
     const threeContainer = document.querySelector('#threeContainer');
     const meshPlaceholder = document.querySelector('#meshPlaceholder');
     const meshBadge = document.querySelector('#meshBadge');
     const characterBadge = document.querySelector('#characterBadge');
     const clipControl = document.querySelector('#clipControl');
     const clipSelect = document.querySelector('#clipSelect');
+    const unloadCharBtn = document.querySelector('#unloadCharBtn');
+    const armClearanceControl = document.querySelector('#armClearanceControl');
+    const armClearanceSlider = document.querySelector('#armClearanceSlider');
+    const armClearanceVal = document.querySelector('#armClearanceVal');
+    const forearmClearanceSlider = document.querySelector('#forearmClearanceSlider');
+    const forearmClearanceVal = document.querySelector('#forearmClearanceVal');
+    const rebakeClearanceBtn = document.querySelector('#rebakeClearanceBtn');
+
+    function findArmBones(model) {
+      let leftArm = null;
+      let rightArm = null;
+      let leftForearm = null;
+      let rightForearm = null;
+      if (!model) return { leftArm, rightArm, leftForearm, rightForearm };
+
+      model.traverse(node => {
+        if (node.isBone) {
+          const name = (node.name || '').toLowerCase();
+          // Exclude child joints like twists, hands, fingers, clavicles, shoulders, share bones
+          if (name.includes('twist') || name.includes('hand') || name.includes('finger') ||
+              name.includes('thumb') || name.includes('clavicle') || name.includes('shoulder') ||
+              name.includes('share') || name.includes('ik_')) {
+            return;
+          }
+
+          let isLeft = name.includes('left') || name.startsWith('l_') || name.endsWith('_l') ||
+                       name.includes('_l_') || name.includes('.l') || name.includes(' l ') ||
+                       name.startsWith('l ') || name.includes(':l_') || name.includes('mixamorig:left') ||
+                       name.includes('cc_base_l_');
+          let isRight = name.includes('right') || name.startsWith('r_') || name.endsWith('_r') ||
+                        name.includes('_r_') || name.includes('.r') || name.includes(' r ') ||
+                        name.startsWith('r ') || name.includes(':r_') || name.includes('mixamorig:right') ||
+                        name.includes('cc_base_r_');
+
+          // Strict exclusivity: never let 'left' in name match right side, and vice versa
+          if (name.includes('left')) isRight = false;
+          if (name.includes('right')) isLeft = false;
+
+          // Upper arm bone
+          if (!name.includes('forearm') && !name.includes('lower') && !name.includes('elbow')) {
+            if (name.includes('arm') || name.includes('upper')) {
+              if (!leftArm && isLeft) {
+                leftArm = node;
+              }
+              if (!rightArm && isRight) {
+                rightArm = node;
+              }
+            }
+          }
+
+          // Forearm bone
+          if (name.includes('forearm') || name.includes('lowerarm') || name.includes('lower_arm') || name.includes('elbow')) {
+            if (!leftForearm && isLeft) {
+              leftForearm = node;
+            }
+            if (!rightForearm && isRight) {
+              rightForearm = node;
+            }
+          }
+        }
+      });
+
+      return { leftArm, rightArm, leftForearm, rightForearm };
+    }
+
+    function applyArmClearance() {
+      if (!currentModelForward) return;
+      if (!threeMixer) {
+        if (currentLeftArmBone && currentLeftArmBone._restQuat) {
+          currentLeftArmBone.quaternion.copy(currentLeftArmBone._restQuat);
+        }
+        if (currentRightArmBone && currentRightArmBone._restQuat) {
+          currentRightArmBone.quaternion.copy(currentRightArmBone._restQuat);
+        }
+        if (currentLeftForeArmBone && currentLeftForeArmBone._restQuat) {
+          currentLeftForeArmBone.quaternion.copy(currentLeftForeArmBone._restQuat);
+        }
+        if (currentRightForeArmBone && currentRightForeArmBone._restQuat) {
+          currentRightForeArmBone.quaternion.copy(currentRightForeArmBone._restQuat);
+        }
+      }
+
+      // 1. Upper Arm Coronal Abduction
+      if (Math.abs(armClearanceDeg) >= 0.001) {
+        const angleRad = (armClearanceDeg * Math.PI) / 180.0;
+        if (currentLeftArmBone) {
+          const parentQuat = new THREE.Quaternion();
+          if (currentLeftArmBone.parent) {
+            currentLeftArmBone.parent.getWorldQuaternion(parentQuat);
+          }
+          const localAxis = currentModelForward.clone().applyQuaternion(parentQuat.clone().invert()).normalize();
+          const qOffset = new THREE.Quaternion().setFromAxisAngle(localAxis, angleRad);
+          currentLeftArmBone.quaternion.premultiply(qOffset);
+        }
+        if (currentRightArmBone) {
+          const parentQuat = new THREE.Quaternion();
+          if (currentRightArmBone.parent) {
+            currentRightArmBone.parent.getWorldQuaternion(parentQuat);
+          }
+          const localAxis = currentModelForward.clone().applyQuaternion(parentQuat.clone().invert()).normalize();
+          const qOffset = new THREE.Quaternion().setFromAxisAngle(localAxis, -angleRad);
+          currentRightArmBone.quaternion.premultiply(qOffset);
+        }
+      }
+
+      // 2. Forearm Coronal Abduction
+      if (Math.abs(forearmClearanceDeg) >= 0.001) {
+        const faAngleRad = (forearmClearanceDeg * Math.PI) / 180.0;
+        if (currentLeftForeArmBone) {
+          const parentQuat = new THREE.Quaternion();
+          if (currentLeftForeArmBone.parent) {
+            currentLeftForeArmBone.parent.getWorldQuaternion(parentQuat);
+          }
+          const localAxis = currentModelForward.clone().applyQuaternion(parentQuat.clone().invert()).normalize();
+          const qOffset = new THREE.Quaternion().setFromAxisAngle(localAxis, faAngleRad);
+          currentLeftForeArmBone.quaternion.premultiply(qOffset);
+        }
+        if (currentRightForeArmBone) {
+          const parentQuat = new THREE.Quaternion();
+          if (currentRightForeArmBone.parent) {
+            currentRightForeArmBone.parent.getWorldQuaternion(parentQuat);
+          }
+          const localAxis = currentModelForward.clone().applyQuaternion(parentQuat.clone().invert()).normalize();
+          const qOffset = new THREE.Quaternion().setFromAxisAngle(localAxis, -faAngleRad);
+          currentRightForeArmBone.quaternion.premultiply(qOffset);
+        }
+      }
+    }
+
+    function resetArmClearanceSlider() {
+      armClearanceDeg = 0;
+      forearmClearanceDeg = 0;
+      if (armClearanceSlider) armClearanceSlider.value = 0;
+      if (armClearanceVal) armClearanceVal.textContent = '0°';
+      if (forearmClearanceSlider) forearmClearanceSlider.value = 0;
+      if (forearmClearanceVal) forearmClearanceVal.textContent = '0°';
+      if (rebakeClearanceBtn) rebakeClearanceBtn.style.display = 'none';
+      if (!threeMixer) {
+        if (currentLeftArmBone && currentLeftArmBone._restQuat) {
+          currentLeftArmBone.quaternion.copy(currentLeftArmBone._restQuat);
+        }
+        if (currentRightArmBone && currentRightArmBone._restQuat) {
+          currentRightArmBone.quaternion.copy(currentRightArmBone._restQuat);
+        }
+        if (currentLeftForeArmBone && currentLeftForeArmBone._restQuat) {
+          currentLeftForeArmBone.quaternion.copy(currentLeftForeArmBone._restQuat);
+        }
+        if (currentRightForeArmBone && currentRightForeArmBone._restQuat) {
+          currentRightForeArmBone.quaternion.copy(currentRightForeArmBone._restQuat);
+        }
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      }
+    }
+
+    function updateRebakeBtnState() {
+      if (!rebakeClearanceBtn) return;
+      const hasArm = Math.abs(armClearanceDeg) > 0.01;
+      const hasFa = Math.abs(forearmClearanceDeg) > 0.01;
+      if (hasArm || hasFa) {
+        rebakeClearanceBtn.style.display = 'inline-flex';
+        const armSign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
+        const faSign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
+        let label = '🔄 Re-bake';
+        if (hasArm && hasFa) {
+          label = `🔄 Re-bake (${armSign}°, ${faSign}°)`;
+        } else if (hasArm) {
+          label = `🔄 Re-bake (${armSign}°)`;
+        } else {
+          label = `🔄 Re-bake (Forearm ${faSign}°)`;
+        }
+        rebakeClearanceBtn.innerHTML = `<span>${label}</span>`;
+      } else {
+        rebakeClearanceBtn.style.display = 'none';
+      }
+    }
+
+    if (armClearanceSlider) {
+      armClearanceSlider.oninput = () => {
+        armClearanceDeg = parseFloat(armClearanceSlider.value) || 0;
+        const sign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
+        if (armClearanceVal) armClearanceVal.textContent = `${sign}°`;
+        updateRebakeBtnState();
+
+        // Apply clearance immediately to current frame
+        if (threeMixer) {
+          threeMixer.setTime(frame / 30.0);
+          applyArmClearance();
+        } else {
+          applyArmClearance();
+        }
+
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
+
+    if (forearmClearanceSlider) {
+      forearmClearanceSlider.oninput = () => {
+        forearmClearanceDeg = parseFloat(forearmClearanceSlider.value) || 0;
+        const sign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
+        if (forearmClearanceVal) forearmClearanceVal.textContent = `${sign}°`;
+        updateRebakeBtnState();
+
+        // Apply clearance immediately to current frame
+        if (threeMixer) {
+          threeMixer.setTime(frame / 30.0);
+          applyArmClearance();
+        } else {
+          applyArmClearance();
+        }
+
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
+
+    if (rebakeClearanceBtn) {
+      rebakeClearanceBtn.onclick = async () => {
+        if (!selected || selected.status !== 'ready') {
+          alert("Please select a ready animation first.");
+          return;
+        }
+        if (!currentCharacterModel) {
+          alert("No character model loaded.");
+          return;
+        }
+
+        const prevHTML = rebakeClearanceBtn.innerHTML;
+        rebakeClearanceBtn.disabled = true;
+        rebakeClearanceBtn.innerHTML = '<span>⏳ Re-baking…</span>';
+
+        bakeStatus.className = 'readout progress';
+        const armSign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
+        const faSign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
+        bakeStatus.textContent = `Re-baking character (Arm: ${armSign}°, Forearm: ${faSign}°)…`;
+
+        try {
+          let res;
+          const file = charFile.files && charFile.files[0];
+          if (file) {
+            const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
+            res = await fetch(url, { method: 'POST', body: file });
+          } else {
+            // Re-bake existing character on disk
+            res = await fetch('/api/retarget', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                animation_id: selected.id,
+                filename: currentUploadedFileName || 'character.fbx',
+                format: charFormat.value,
+                arm_clearance: armClearanceDeg,
+                forearm_clearance: forearmClearanceDeg
+              })
+            });
+          }
+
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'Re-baking failed');
+          }
+
+          bakeStatus.className = 'readout';
+          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Re-bake complete with clearance (Arm: ${armSign}°, Forearm: ${faSign}°)!</span>`;
+          bakeDownload.href = data.download_url;
+          bakeDownload.download = data.filename;
+          bakeDownload.textContent = `Download ${data.filename}`;
+          bakeDownload.hidden = false;
+
+          // Immediately reload the newly baked 3D character in the 3D viewport
+          if (data.preview_url) {
+            await loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || 'Character') + ' (Animated)', 'glb', true);
+          }
+
+          // Reset slider back to 0° since clearance is now baked directly into the model
+          resetArmClearanceSlider();
+          refresh();
+        } catch (err) {
+          console.error("Re-baking error:", err);
+          bakeStatus.className = 'error';
+          bakeStatus.textContent = `Re-baking error: ${err.message}`;
+        } finally {
+          rebakeClearanceBtn.disabled = false;
+          rebakeClearanceBtn.innerHTML = prevHTML;
+        }
+      };
+    }
 
     function playClipByIndex(idx) {
       if (!threeMixer || !currentGltfClips[idx]) return;
@@ -989,6 +1620,7 @@
       currentAction = threeMixer.clipAction(currentGltfClips[idx]);
       currentAction.reset().play();
       threeMixer.setTime(frame / 30.0);
+      applyArmClearance();
       clipSelect.value = idx;
       console.log(`[3D Viewport] Active Clip [${idx}]: "${currentGltfClips[idx].name}" (${currentGltfClips[idx].duration.toFixed(2)}s)`);
     }
@@ -1008,7 +1640,7 @@
       threeCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
       threeCamera.position.set(0, 1.4, 3.2);
 
-      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
       threeRenderer.setSize(w, h);
       threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       threeRenderer.shadowMap.enabled = true;
@@ -1041,9 +1673,9 @@
       threeScene.add(rimLight);
 
       // Ground Grid
-      const gridHelper = new THREE.GridHelper(20, 20, 0x3bd3d0, 0x1a2632);
-      gridHelper.position.y = 0;
-      threeScene.add(gridHelper);
+      threeGridHelper = new THREE.GridHelper(20, 20, 0x3bd3d0, 0x1a2632);
+      threeGridHelper.position.y = 0;
+      threeScene.add(threeGridHelper);
 
       window.addEventListener('resize', onThreeResize);
     }
@@ -1058,7 +1690,102 @@
       }
     }
 
-    async function loadRetargetedModel(modelUrl, charName = "Character", formatHint = "glb") {
+    function getTrueCharacterBounds(model) {
+      if (!model) return new THREE.Box3(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 1.7, 0.5));
+      model.updateMatrixWorld(true);
+      const boneBox = new THREE.Box3();
+      let boneCount = 0;
+
+      model.traverse(node => {
+        if (node.isBone) {
+          const pos = new THREE.Vector3();
+          node.getWorldPosition(pos);
+          boneBox.expandByPoint(pos);
+          boneCount++;
+        }
+      });
+
+      const meshBox = new THREE.Box3().setFromObject(model);
+      const boneHeight = boneBox.max.y - boneBox.min.y;
+      const meshHeight = meshBox.max.y - meshBox.min.y;
+      const finalBox = new THREE.Box3();
+
+      if (boneCount >= 5 && boneHeight > 0.1) {
+        // Skinned humanoid: bone world positions provide authentic animated height & proportions
+        finalBox.copy(boneBox);
+        // Head crown padding above head bone (~16% of height)
+        finalBox.max.y += boneHeight * 0.16;
+        // Soles padding below foot bones (~4%)
+        finalBox.min.y -= boneHeight * 0.04;
+        // Lateral/depth padding for arm, hand & torso mesh volume (~10%)
+        finalBox.min.x -= boneHeight * 0.10;
+        finalBox.max.x += boneHeight * 0.10;
+        finalBox.min.z -= boneHeight * 0.10;
+        finalBox.max.z += boneHeight * 0.10;
+
+        // If meshBox also has a reasonable height (within 40% to 250% of bone height), union them
+        if (meshHeight > boneHeight * 0.4 && meshHeight < boneHeight * 2.5) {
+          finalBox.union(meshBox);
+        }
+      } else if (!meshBox.isEmpty()) {
+        finalBox.copy(meshBox);
+      } else {
+        finalBox.set(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 1.7, 0.5));
+      }
+
+      return finalBox;
+    }
+
+    function getCharacterForwardAngle(model) {
+      if (!model) return 0.0;
+      let leftPos = null;
+      let rightPos = null;
+
+      model.traverse(node => {
+        if (node.isBone) {
+          const name = (node.name || '').toLowerCase();
+          if (!leftPos && (
+            name.includes('leftupleg') || name.includes('l_thigh') || name.includes('l thigh') ||
+            name.includes('thigh.l') || name.includes('leg.l') || name.includes('l leg') ||
+            name.includes('leftleg') || name.includes('leftfoot') || name.includes('l_foot')
+          )) {
+            leftPos = new THREE.Vector3();
+            node.getWorldPosition(leftPos);
+          } else if (!rightPos && (
+            name.includes('rightupleg') || name.includes('r_thigh') || name.includes('r thigh') ||
+            name.includes('thigh.r') || name.includes('leg.r') || name.includes('r leg') ||
+            name.includes('rightleg') || name.includes('rightfoot') || name.includes('r_foot')
+          )) {
+            rightPos = new THREE.Vector3();
+            node.getWorldPosition(rightPos);
+          }
+        }
+      });
+
+      if (leftPos && rightPos) {
+        const lateral = new THREE.Vector3().subVectors(leftPos, rightPos);
+        lateral.y = 0;
+        if (lateral.lengthSq() > 0.00001) {
+          lateral.normalize();
+          // Cross product: Up (0, 1, 0) x Lateral vector points in character's forward facing direction!
+          const forward = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), lateral).normalize();
+          return Math.atan2(forward.x, forward.z);
+        }
+      }
+
+      // If bone orientation is indeterminate, check if user already framed camera in viewport
+      if (threeCamera && threeControls && threeControls.target) {
+        const dx = threeCamera.position.x - threeControls.target.x;
+        const dz = threeCamera.position.z - threeControls.target.z;
+        if (Math.hypot(dx, dz) > 0.1) {
+          return Math.atan2(dx, dz);
+        }
+      }
+
+      return 0.0;
+    }
+
+    async function loadRetargetedModel(modelUrl, charName = "Character", formatHint = "glb", isBaked = false) {
       if (!window.THREE) return;
       meshPlaceholder.style.display = 'none';
       meshBadge.textContent = `⏳ Loading ${charName}…`;
@@ -1106,39 +1833,58 @@
         });
 
         currentCharacterModel.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(currentCharacterModel);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
+        let box = getTrueCharacterBounds(currentCharacterModel);
+        let size = box.getSize(new THREE.Vector3());
+        let center = box.getCenter(new THREE.Vector3());
 
-        // Auto-normalize scale if model units are centimeters (e.g. height > 25 units)
-        if (size.y > 25 || size.z > 25 || size.x > 25) {
-          currentCharacterModel.scale.setScalar(0.01);
-          currentCharacterModel.updateMatrixWorld(true);
-          box.setFromObject(currentCharacterModel);
-          box.getSize(size);
-          box.getCenter(center);
-        }
-
-        // Ground feet onto floor grid (y = 0)
-        if (Math.abs(box.min.y) > 0.001) {
+        // Ground feet onto floor grid (y = 0) if lowest point is shifted
+        if (Math.abs(box.min.y) > 0.005) {
           currentCharacterModel.position.y -= box.min.y;
           currentCharacterModel.updateMatrixWorld(true);
-          box.setFromObject(currentCharacterModel);
-          box.getSize(size);
-          box.getCenter(center);
+          box = getTrueCharacterBounds(currentCharacterModel);
+          size = box.getSize(new THREE.Vector3());
+          center = box.getCenter(new THREE.Vector3());
         }
 
-        // Auto-frame camera based on model bounding box
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const fov = threeCamera.fov * (Math.PI / 180);
-        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-        cameraZ = Math.max(cameraZ, 2.0);
+        // Auto-frame camera based on true character bounds
+        const fov = (threeCamera.fov || 45) * (Math.PI / 180);
+        const aspect = (threeCamera.aspect && threeCamera.aspect > 0) ? threeCamera.aspect : (threeContainer.clientWidth / (threeContainer.clientHeight || 1));
+        const modelHeight = Math.max(size.y, 0.4);
+        const modelWidth = Math.max(size.x, size.z, modelHeight * 0.35);
 
-        threeCamera.position.set(center.x, center.y + (size.y * 0.15), center.z + cameraZ);
+        // 1.55 padding factor gives ~18% headroom and ~18% footroom
+        const distV = (modelHeight * 1.55) / (2 * Math.tan(fov / 2));
+        const distH = (modelWidth * 1.55) / (2 * Math.tan(fov / 2) * Math.max(0.6, aspect));
+        const fitDist = Math.max(distV, distH);
+
+        const fwdAngle = getCharacterForwardAngle(currentCharacterModel);
+        const fwdX = Math.sin(fwdAngle);
+        const fwdZ = Math.cos(fwdAngle);
+
+        threeCamera.position.set(
+          center.x + fwdX * fitDist,
+          center.y + fitDist * Math.sin(7 * Math.PI / 180),
+          center.z + fwdZ * fitDist
+        );
         threeControls.target.set(center.x, center.y, center.z);
         threeControls.update();
 
         threeScene.add(currentCharacterModel);
+
+        // Find and cache arm & forearm bones for clearance controls
+        const armBones = findArmBones(currentCharacterModel);
+        currentLeftArmBone = armBones.leftArm;
+        currentRightArmBone = armBones.rightArm;
+        currentLeftForeArmBone = armBones.leftForearm;
+        currentRightForeArmBone = armBones.rightForearm;
+        if (currentLeftArmBone) currentLeftArmBone._restQuat = currentLeftArmBone.quaternion.clone();
+        if (currentRightArmBone) currentRightArmBone._restQuat = currentRightArmBone.quaternion.clone();
+        if (currentLeftForeArmBone) currentLeftForeArmBone._restQuat = currentLeftForeArmBone.quaternion.clone();
+        if (currentRightForeArmBone) currentRightForeArmBone._restQuat = currentRightForeArmBone.quaternion.clone();
+        currentModelForward = new THREE.Vector3(fwdX, 0, fwdZ).normalize();
+
+        if (armClearanceControl) armClearanceControl.style.display = 'flex';
+        if (viewportTopControls) viewportTopControls.style.display = 'flex';
 
         // Setup Animation & Clips Dropdown
         if (clips && clips.length > 0) {
@@ -1166,6 +1912,14 @@
         }
 
         onThreeResize();
+        if (Math.abs(armClearanceDeg) > 0.001 || Math.abs(forearmClearanceDeg) > 0.001) {
+          applyArmClearance();
+        }
+        if (typeof resetTurntableVideoState === 'function') resetTurntableVideoState();
+        const hasBakedAnim = isBaked || (charName && charName.toLowerCase().includes('animated'));
+        isCharacterAnimationBaked = Boolean(hasBakedAnim);
+        showTurntableButtons(isCharacterAnimationBaked);
+        if (unloadCharBtn) unloadCharBtn.style.display = 'inline-flex';
       };
 
       const onProgress = xhr => {
@@ -1268,6 +2022,7 @@
       last = performance.now();
       snapCamera();
       slider.max = a.frames - 1;
+      resetArmClearanceSlider();
 
       // When switching animations: Keep the user's uploaded character in rest-pose preview, ready to bake!
       bakeDownload.hidden = true;
@@ -1276,15 +2031,28 @@
         bakeStatus.className = 'readout';
         bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character ready. Click <b>"Bake to Mesh"</b> to animate with this motion!</span>`;
         bakeBtn.style.animation = 'pulse 1.2s infinite';
+        isCharacterAnimationBaked = false;
+        showTurntableButtons(false);
       } else {
         if (currentCharacterModel) {
           threeScene.remove(currentCharacterModel);
           currentCharacterModel = null;
         }
+        currentLeftArmBone = null;
+        currentRightArmBone = null;
+        currentLeftForeArmBone = null;
+        currentRightForeArmBone = null;
+        currentModelForward = null;
+        if (armClearanceControl) armClearanceControl.style.display = 'none';
+        if (viewportTopControls) viewportTopControls.style.display = 'none';
         meshPlaceholder.style.display = 'flex';
         meshBadge.textContent = '👤 Retargeted 3D Mesh';
         characterBadge.style.display = 'none';
         clipControl.style.display = 'none';
+        if (unloadCharBtn) unloadCharBtn.style.display = 'none';
+        if (typeof resetTurntableVideoState === 'function') resetTurntableVideoState();
+        isCharacterAnimationBaked = false;
+        showTurntableButtons(false);
         bakeStatus.className = 'readout';
         bakeStatus.textContent = 'Upload your character (.fbx / .glb) and click Bake to Mesh.';
       }
@@ -1401,25 +2169,23 @@
           return;
         }
 
-        modalFolderList.innerHTML = data.items.map(item => `
-      <div style="background:#101720;border:1px solid var(--la-line);border-radius:8px;padding:10px 14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-          <div style="font-weight:600;font-size:0.85rem;color:var(--la-text)">${item.prompt || item.id}</div>
-          <code style="font-size:0.72rem;color:var(--la-muted);background:#090d12;padding:2px 6px;border-radius:4px">${item.id}</code>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${item.files.map(f => `
-            <a href="${f.url}" download="${f.name}" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;font-size:0.75rem;background:#182530;color:var(--la-cyan);border:1px solid var(--la-line);transition:all 0.15s ease">
-              <span>📄</span>
-              <span style="font-weight:500">${f.name}</span>
-              <span style="color:var(--la-muted);font-size:0.68rem">(${(f.size / 1024).toFixed(0)} KB)</span>
-            </a>
-          `).join('')}
-        </div>
-      </div>
-    `).join('');
+        modalFolderList.innerHTML = '';
+        data.items.forEach(it => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:0.82rem';
+
+          const sizeKb = (it.size / 1024).toFixed(0);
+          row.innerHTML = `
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;color:var(--la-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.name}</div>
+              <div style="font-size:0.72rem;color:var(--la-muted)">${sizeKb} KB · modified ${it.modified}</div>
+            </div>
+            <a href="${it.download_url}" download="${it.name}" style="background:var(--la-surface-high);color:var(--la-cyan);border:1px solid var(--la-line);padding:4px 10px;border-radius:4px;font-size:0.75rem;text-decoration:none;font-weight:600;white-space:nowrap">Download</a>
+          `;
+          modalFolderList.appendChild(row);
+        });
       } catch (err) {
-        modalFolderList.innerHTML = `<div style="color:#ff8888;font-size:0.85rem">Failed to load files: ${err.message}</div>`;
+        modalFolderList.innerHTML = `<div style="color:#e53e3e;font-size:0.85rem">Failed to load files: ${err.message}</div>`;
       }
     }
 
@@ -1537,7 +2303,10 @@
     charFile.onchange = async () => {
       const file = charFile.files[0];
       if (file) {
+        isCharacterAnimationBaked = false;
+        showTurntableButtons(false);
         currentUploadedFileName = file.name;
+        resetArmClearanceSlider();
         const isFbx = file.name.toLowerCase().endsWith('.fbx');
         const isGlb = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
 
@@ -1590,10 +2359,10 @@
       bakeBtn.disabled = true;
       bakeDownload.hidden = true;
       bakeStatus.className = 'readout progress';
-      bakeStatus.textContent = `Uploading ${file.name} & baking in Blender (2s)…`;
+      bakeStatus.textContent = `Uploading ${file.name} & baking animation…`;
 
       try {
-        const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}`;
+        const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
         const res = await fetch(url, { method: 'POST', body: file });
         const data = await res.json();
         if (!res.ok || data.error) {
@@ -1608,9 +2377,10 @@
 
         // Immediately load the newly baked 3D character in the 3D viewport!
         if (data.preview_url) {
-          loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || file.name.split('.')[0]) + ' (Animated)');
+          loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || file.name.split('.')[0]) + ' (Animated)', 'glb', true);
           setViewMode('dual');
         }
+        resetArmClearanceSlider();
         refresh();
       } catch (err) {
         bakeStatus.className = 'error';
@@ -1620,8 +2390,426 @@
       }
     };
 
+    // --- TURNTABLE 360 VIDEO RECORDING ENGINE (ON 3D CHARACTER VIEW RENDER) ---
+    const viewportDownloadTurntableBtn = document.querySelector('#viewportDownloadTurntableBtn');
+    const viewportDownloadTurntableText = document.querySelector('#viewportDownloadTurntableText');
+    const viewportTurntableBtn = document.querySelector('#viewportTurntableBtn');
+    const viewportRecordTurntableText = document.querySelector('#viewportRecordTurntableText');
+    const viewportTopControls = document.querySelector('#viewportTopControls');
+    const meshViewportTurntableBar = document.querySelector('#meshViewportTurntableBar');
+    const turntableRecordingHUD = document.querySelector('#turntableRecordingHUD');
+    const turntableProgressText = document.querySelector('#turntableProgressText');
+    const turntableProgressBar = document.querySelector('#turntableProgressBar');
+    const cancelTurntableBtn = document.querySelector('#cancelTurntableBtn');
+
+    let latestTurntableBlob = null;
+    let latestTurntableUrl = null;
+    let latestTurntableFilename = null;
+    let isCharacterAnimationBaked = false;
+
+    function triggerVideoDownload(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function showTurntableButtons(show = true) {
+      if (viewportTopControls) {
+        viewportTopControls.style.display = currentCharacterModel ? 'flex' : 'none';
+      }
+      if (armClearanceControl) {
+        armClearanceControl.style.display = currentCharacterModel ? 'flex' : 'none';
+      }
+      if (meshViewportTurntableBar) {
+        meshViewportTurntableBar.style.display = (show && isCharacterAnimationBaked) ? 'flex' : 'none';
+      }
+    }
+
+    function resetTurntableVideoState() {
+      if (latestTurntableUrl) {
+        URL.revokeObjectURL(latestTurntableUrl);
+      }
+      latestTurntableBlob = null;
+      latestTurntableUrl = null;
+      latestTurntableFilename = null;
+      if (viewportDownloadTurntableBtn) {
+        viewportDownloadTurntableBtn.classList.remove('ready-download');
+        viewportDownloadTurntableBtn.title = "Record and download a clean 360° orbiting turntable video";
+      }
+      if (viewportDownloadTurntableText) {
+        viewportDownloadTurntableText.textContent = "Download 360° Video";
+      }
+      if (viewportRecordTurntableText) {
+        viewportRecordTurntableText.textContent = "Record 360°";
+      }
+    }
+
+    function getBestVideoMimeType() {
+      const candidates = [
+        { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
+        { mime: 'video/mp4', ext: 'mp4' },
+        { mime: 'video/webm;codecs=vp9', ext: 'webm' },
+        { mime: 'video/webm;codecs=vp8', ext: 'webm' },
+        { mime: 'video/webm', ext: 'webm' }
+      ];
+      for (const c of candidates) {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c.mime)) {
+          return c;
+        }
+      }
+      return { mime: '', ext: 'webm' };
+    }
+
+    async function startTurntableRecording() {
+      if (isRecordingTurntable) return;
+      if (!isCharacterAnimationBaked || !currentCharacterModel) {
+        alert("Please bake an animation onto your character first to record a turntable video.");
+        return;
+      }
+
+      // Switch to 3D character mesh viewport if skeleton-only is active
+      if (stageArea.classList.contains('mode-skeleton')) {
+        setViewMode('mesh');
+      }
+
+      // Force canvas size synchronization
+      onThreeResize();
+
+      const canvas = threeRenderer.domElement;
+      if (!canvas.captureStream) {
+        alert("Your browser does not support canvas video stream capture.");
+        return;
+      }
+
+      const { mime, ext } = getBestVideoMimeType();
+      const stream = canvas.captureStream(60);
+      const options = mime ? { mimeType: mime, videoBitsPerSecond: 10000000 } : { videoBitsPerSecond: 10000000 };
+
+      let mediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (e) {
+        console.warn("Retrying default MediaRecorder options:", e);
+        mediaRecorder = new MediaRecorder(stream);
+      }
+
+      const recordedChunks = [];
+      mediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) {
+          recordedChunks.push(e.data);
+        }
+      };
+
+      // Determine exact animation length so the 360 rotation is consistent with animation cycle
+      let animDuration = 0;
+      if (currentAction && currentAction.getClip() && currentAction.getClip().duration > 0.05) {
+        animDuration = currentAction.getClip().duration;
+      } else if (currentGltfClips && clipSelect && currentGltfClips[Number(clipSelect.value)]?.duration > 0.05) {
+        animDuration = currentGltfClips[Number(clipSelect.value)].duration;
+      } else if (selected && selected.frames && selected.frames > 0) {
+        animDuration = selected.frames / 30.0;
+      }
+      const duration = Math.max(animDuration, 1.0);
+
+      // Reset animation playback to beginning (frame 0) so turntable video starts right at the beginning
+      frame = 0;
+      playbackBlend = 0;
+      last = performance.now();
+      if (threeMixer) {
+        threeMixer.setTime(0);
+      }
+      if (currentAction) {
+        currentAction.time = 0;
+      }
+      playing = true;
+      const playBtn = document.querySelector('#play');
+      if (playBtn) playBtn.textContent = 'Pause';
+
+      // Compute true character bounds from animated bones & meshes
+      currentCharacterModel.updateMatrixWorld(true);
+      const box = getTrueCharacterBounds(currentCharacterModel);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      // Save initial camera and control state to restore when done
+      const origCamPos = threeCamera.position.clone();
+      const origTarget = threeControls.target.clone();
+      const wasControlsEnabled = threeControls.enabled;
+      threeControls.enabled = false;
+
+      // Stable focus point at the exact vertical center of the character
+      const targetFocus = new THREE.Vector3(center.x, center.y, center.z);
+
+      // Framing distance: calibrated so character occupies ~65% of screen height
+      // leaving 18% headroom and 18% footroom so head & feet are NEVER clipped
+      const fovRad = (threeCamera.fov || 45) * (Math.PI / 180);
+      const aspect = (threeCamera.aspect && threeCamera.aspect > 0) ? threeCamera.aspect : (threeContainer.clientWidth / (threeContainer.clientHeight || 1));
+      const modelHeight = Math.max(size.y, 0.4);
+      const modelWidth = Math.max(size.x, size.z, modelHeight * 0.35);
+
+      const distV = (modelHeight * 1.55) / (2 * Math.tan(fovRad / 2));
+      const distH = (modelWidth * 1.55) / (2 * Math.tan(fovRad / 2) * Math.max(0.6, aspect));
+      const baseDistance = Math.max(distV, distH);
+
+      // Studio elevated turntable angle (~7 degrees above horizontal plane)
+      // Gives clean perspective depth without pushing the character's head out of frame
+      const elevationDeg = 7.0;
+      const elevationRad = elevationDeg * (Math.PI / 180);
+      const camY = targetFocus.y + baseDistance * Math.sin(elevationRad);
+      const orbitRadius = baseDistance * Math.cos(elevationRad);
+
+      // Authentic front view angle computed directly from character skeleton
+      const startAngle = getCharacterForwardAngle(currentCharacterModel);
+
+      // Hide ground grid for clean studio turntable recording
+      const wasGridVisible = threeGridHelper ? threeGridHelper.visible : true;
+      if (threeGridHelper) {
+        threeGridHelper.visible = false;
+      }
+
+      // Snap camera directly to front view at elevated angle before capture starts
+      threeCamera.position.set(
+        targetFocus.x + orbitRadius * Math.sin(startAngle),
+        camY,
+        targetFocus.z + orbitRadius * Math.cos(startAngle)
+      );
+      threeCamera.lookAt(targetFocus);
+      threeControls.target.copy(targetFocus);
+      threeRenderer.render(threeScene, threeCamera);
+
+      isRecordingTurntable = true;
+      turntableRecordingHUD.style.display = 'flex';
+      if (viewportDownloadTurntableBtn) viewportDownloadTurntableBtn.disabled = true;
+      if (viewportTurntableBtn) viewportTurntableBtn.disabled = true;
+      if (viewportDownloadTurntableText) viewportDownloadTurntableText.textContent = "Recording 360°…";
+
+      mediaRecorder.start(100);
+      const startTime = performance.now();
+      let cancelled = false;
+
+      cancelTurntableBtn.onclick = () => {
+        cancelled = true;
+      };
+
+      function finishRecording(success) {
+        isRecordingTurntable = false;
+        turntableRecordingHUD.style.display = 'none';
+        if (viewportDownloadTurntableBtn) viewportDownloadTurntableBtn.disabled = false;
+        if (viewportTurntableBtn) viewportTurntableBtn.disabled = false;
+
+        // Restore ground grid
+        if (threeGridHelper) {
+          threeGridHelper.visible = wasGridVisible;
+        }
+
+        // Restore camera and controls
+        threeCamera.position.copy(origCamPos);
+        threeControls.target.copy(origTarget);
+        threeControls.enabled = wasControlsEnabled;
+        threeControls.update();
+        threeRenderer.render(threeScene, threeCamera);
+
+        // Reset animation timer so playback resumes smoothly in viewer
+        last = performance.now();
+        frame = 0;
+        playbackBlend = 0;
+
+        if (!success) {
+          if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+          if (viewportDownloadTurntableText) {
+            viewportDownloadTurntableText.textContent = latestTurntableUrl ? `Download 360° Video` : "Download 360° Video";
+          }
+          return;
+        }
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+          if (blob.size === 0) {
+            alert("Video capture was empty. Please try again.");
+            if (viewportDownloadTurntableText) viewportDownloadTurntableText.textContent = "Download 360° Video";
+            return;
+          }
+          if (latestTurntableUrl) {
+            URL.revokeObjectURL(latestTurntableUrl);
+          }
+          const videoUrl = URL.createObjectURL(blob);
+          const rawName = (currentUploadedFileName || selected?.prompt || 'character')
+            .replace(/\.[^/.]+$/, '')
+            .replace(/[^a-zA-Z0-9_\-]/g, '_')
+            .slice(0, 36);
+          const filename = `${rawName}_turntable_360.${ext}`;
+
+          latestTurntableBlob = blob;
+          latestTurntableUrl = videoUrl;
+          latestTurntableFilename = filename;
+
+          // Auto-trigger browser download immediately
+          triggerVideoDownload(videoUrl, filename);
+
+          // Update Download Button directly on the 3D Character View Render
+          const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+          if (viewportDownloadTurntableText) {
+            viewportDownloadTurntableText.textContent = `Download 360° Video (${sizeMB} MB)`;
+          }
+          if (viewportDownloadTurntableBtn) {
+            viewportDownloadTurntableBtn.classList.add('ready-download');
+            viewportDownloadTurntableBtn.title = `Click to re-download ${filename} (${sizeMB} MB)`;
+          }
+          if (viewportRecordTurntableText) {
+            viewportRecordTurntableText.textContent = "Re-record 360°";
+          }
+
+          bakeStatus.className = 'readout';
+          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ 360° Turntable video recorded & downloaded (${sizeMB} MB)!</span>`;
+        };
+
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      }
+
+      function stepTurntable(now) {
+        if (!isRecordingTurntable) return;
+        if (cancelled) {
+          finishRecording(false);
+          return;
+        }
+
+        const elapsed = (now - startTime) / 1000.0;
+        const progress = Math.min(1.0, elapsed / duration);
+
+        // Continuous smooth 360 rotation that keeps turning until animation ends
+        const curAngle = startAngle + progress * Math.PI * 2;
+        threeCamera.position.x = targetFocus.x + orbitRadius * Math.sin(curAngle);
+        threeCamera.position.z = targetFocus.z + orbitRadius * Math.cos(curAngle);
+        threeCamera.position.y = camY;
+        threeCamera.lookAt(targetFocus);
+        threeControls.target.copy(targetFocus);
+
+        // Keep character animation time frame-perfect in sync with turntable progress
+        const animTime = progress * duration;
+        if (threeMixer) {
+          threeMixer.setTime(animTime);
+          applyArmClearance();
+        }
+        if (selected && selected.frames) {
+          frame = Math.min(selected.frames - 1, Math.floor(progress * selected.frames));
+        }
+
+        // Render current 3D frame into canvas stream
+        threeRenderer.render(threeScene, threeCamera);
+
+        // Update progress HUD
+        const pct = Math.round(progress * 100);
+        const remSec = Math.max(0, duration - elapsed).toFixed(1);
+        turntableProgressText.textContent = `${pct}% (${remSec}s)`;
+        turntableProgressBar.style.width = `${pct}%`;
+
+        if (progress >= 1.0) {
+          finishRecording(true);
+          return;
+        }
+
+        requestAnimationFrame(stepTurntable);
+      }
+
+      requestAnimationFrame(stepTurntable);
+    }
+
+    if (viewportDownloadTurntableBtn) {
+      viewportDownloadTurntableBtn.onclick = () => {
+        if (isRecordingTurntable) return;
+        if (!isCharacterAnimationBaked || !currentCharacterModel) {
+          alert("Please bake an animation onto your character first to record and download a 360° turntable video.");
+          return;
+        }
+        if (latestTurntableUrl && latestTurntableFilename) {
+          triggerVideoDownload(latestTurntableUrl, latestTurntableFilename);
+          return;
+        }
+        startTurntableRecording();
+      };
+    }
+
+    if (viewportTurntableBtn) {
+      viewportTurntableBtn.onclick = () => {
+        if (isRecordingTurntable) return;
+        if (!isCharacterAnimationBaked || !currentCharacterModel) {
+          alert("Please bake an animation onto your character first to record a turntable video.");
+          return;
+        }
+        startTurntableRecording();
+      };
+    }
+
+    function unloadCurrentCharacter() {
+      // 1. Remove 3D model from Three.js scene
+      if (currentCharacterModel) {
+        threeScene.remove(currentCharacterModel);
+        currentCharacterModel = null;
+      }
+      currentLeftArmBone = null;
+      currentRightArmBone = null;
+      currentLeftForeArmBone = null;
+      currentRightForeArmBone = null;
+      currentModelForward = null;
+      resetArmClearanceSlider();
+      if (armClearanceControl) armClearanceControl.style.display = 'none';
+      if (viewportTopControls) viewportTopControls.style.display = 'none';
+
+      // 2. Stop animation mixer & clips
+      if (threeMixer) {
+        threeMixer.stopAllAction();
+        threeMixer = null;
+      }
+      currentAction = null;
+      currentGltfClips = [];
+
+      // 3. Clear file inputs & session variables
+      if (currentUploadedBlobUrl && currentUploadedBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(currentUploadedBlobUrl);
+      }
+      currentUploadedBlobUrl = null;
+      currentUploadedFileName = null;
+      if (charFile) {
+        charFile.value = '';
+      }
+
+      // 4. Reset turntable recorder state & hide buttons
+      if (typeof resetTurntableVideoState === 'function') resetTurntableVideoState();
+      isCharacterAnimationBaked = false;
+      showTurntableButtons(false);
+
+      // 5. Reset viewport UI elements
+      meshPlaceholder.style.display = 'flex';
+      meshBadge.textContent = '👤 Retargeted 3D Mesh';
+      characterBadge.style.display = 'none';
+      clipControl.style.display = 'none';
+      if (unloadCharBtn) unloadCharBtn.style.display = 'none';
+
+      // 6. Reset baking status & download link in sidebar
+      bakeDownload.hidden = true;
+      bakeBtn.style.animation = 'none';
+      bakeBtn.disabled = false;
+      bakeStatus.className = 'readout';
+      bakeStatus.textContent = 'Upload your character (.fbx / .glb) and click Bake to Mesh.';
+
+      // 7. Re-render clean 3D scene
+      if (threeRenderer && threeScene && threeCamera) {
+        threeRenderer.render(threeScene, threeCamera);
+      }
+    }
+
+    if (unloadCharBtn) {
+      unloadCharBtn.onclick = unloadCurrentCharacter;
+    }
+
     // Initial Setup
     initThreeViewer();
+    showTurntableButtons(false);
     ensureModelsLoaded().then(() => refresh()).then(() => {
       const a = animations.find(a => a.status === 'ready');
       if (a) return select(a);

@@ -495,6 +495,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
+        content_type = self.headers.get("Content-Type", "")
 
         if path == "/api/generate":
             length = int(self.headers.get("Content-Length", 0))
@@ -531,11 +532,12 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == "/api/retarget":
             length = int(self.headers.get("Content-Length", 0))
-            content_type = self.headers.get("Content-Type", "")
             aid = query.get("animation_id", [""])[0]
             out_format = query.get("format", ["glb"])[0].lower()
             raw_filename = query.get("filename", ["character.fbx"])[0]
             filename = urllib.parse.unquote(raw_filename)
+            arm_clearance = float(query.get("arm_clearance", [0.0])[0]) if "arm_clearance" in query else 0.0
+            forearm_clearance = float(query.get("forearm_clearance", [0.0])[0]) if "forearm_clearance" in query else 0.0
 
             try:
                 if "application/json" in content_type:
@@ -544,7 +546,17 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     aid = req.get("animation_id", aid)
                     filename = urllib.parse.unquote(req.get("filename", filename))
                     out_format = req.get("format", out_format)
-                    file_bytes = base64.b64decode(req.get("file_data", ""))
+                    file_bytes = base64.b64decode(req.get("file_data", "")) if req.get("file_data") else None
+                    if "arm_clearance" in req:
+                        try:
+                            arm_clearance = float(req.get("arm_clearance", 0.0))
+                        except Exception:
+                            arm_clearance = 0.0
+                    if "forearm_clearance" in req:
+                        try:
+                            forearm_clearance = float(req.get("forearm_clearance", 0.0))
+                        except Exception:
+                            forearm_clearance = 0.0
                 else:
                     # Direct binary stream upload
                     item_dir = OUTPUT_DIR / aid
@@ -573,6 +585,10 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 char_path = item_dir / f"upload_character{char_ext}"
                 if file_bytes is not None:
                     char_path.write_bytes(file_bytes)
+                elif not char_path.is_file():
+                    existing_chars = list(item_dir.glob("upload_character.*"))
+                    if existing_chars:
+                        char_path = existing_chars[0]
 
                 clean_stem = Path(filename).stem.replace(" ", "_")
                 out_filename = f"{clean_stem}_animated.{out_format}"
@@ -582,8 +598,10 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 bake_script = ROOT_DIR / "scripts/bake_to_character.py"
 
                 print(f"[Retarget] Running Blender: {blender_exe}")
-                print(f"[Retarget] Character: {char_path} ({char_path.stat().st_size} bytes)")
+                print(f"[Retarget] Character: {char_path} ({char_path.stat().st_size if char_path.is_file() else 'missing'} bytes)")
                 print(f"[Retarget] Output:    {out_path}")
+                print(f"[Retarget] Arm Clearance:     {arm_clearance:+.1f}°")
+                print(f"[Retarget] Forearm Clearance: {forearm_clearance:+.1f}°")
 
                 cmd = [
                     str(blender_exe),
@@ -598,6 +616,10 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     "--output",
                     str(out_path),
                 ]
+                if abs(arm_clearance) > 0.001:
+                    cmd.extend(["--arm-clearance", str(arm_clearance)])
+                if abs(forearm_clearance) > 0.001:
+                    cmd.extend(["--forearm-clearance", str(forearm_clearance)])
 
                 proc = subprocess.run(cmd, capture_output=True, text=True)
                 print(f"[Retarget] Blender returncode: {proc.returncode}")
