@@ -39,3 +39,8 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+
+# Testing Models
+/test_models/*
+*.glb

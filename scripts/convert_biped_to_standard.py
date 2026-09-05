@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import bpy
+import math
 import mathutils
 
 def clear_scene():
@@ -63,6 +64,7 @@ def convert_biped(input_path: Path, output_path: Path):
         print("[Biped Converter] No armature found!")
         return False
     old_arm = arm_objs[0]
+    char_meshes = [o for o in bpy.data.objects if o.type == 'MESH']
 
     # Clean legacy actions
     for a in list(bpy.data.actions):
@@ -74,8 +76,30 @@ def convert_biped(input_path: Path, output_path: Path):
     old_arm.data.pose_position = 'REST'
     bpy.context.view_layer.update()
 
-    # Determine unit scale (3ds Max centimeter scale is 0.01)
-    unit_scale = 0.01
+    # Determine if this is a standard 3ds Max Biped (euler.z ~ -1.57 rad) or a rotated kitbashed Biped (euler.z > 0.5 rad)
+    ez = old_arm.matrix_world.to_euler().z
+    is_rotated_biped = (ez > 0.5)
+
+    if is_rotated_biped:
+        # Rotated biped (e.g. EMERSO)
+        arm_scale = 0.01 if old_arm.matrix_world.to_scale().z > 0.5 else 1.0
+        yaw_corr = - (ez - (-math.pi / 2))
+        R_yaw = mathutils.Matrix.Rotation(yaw_corr, 4, 'Z')
+
+        # Calculate ground shift
+        min_z = 999999.0
+        for m in char_meshes:
+            for v in m.data.vertices:
+                w_p = (R_yaw @ m.matrix_world @ v.co) * (0.01 if m.matrix_world.to_scale().z > 0.5 else 1.0)
+                if w_p.z < min_z:
+                    min_z = w_p.z
+        ground_shift = mathutils.Vector((0, 0, -min_z if (min_z < -0.05 or min_z > 0.05) else 0.0))
+    else:
+        # Standard 3ds Max Biped (Glow, Ahmed, Trump) - 100% proven native pipeline
+        arm_scale = 1.0
+        yaw_corr = 0.0
+        R_yaw = mathutils.Matrix.Identity(4)
+        ground_shift = mathutils.Vector((0, 0, 0))
 
     # Collect bone locations & hierarchy in normalized meter coordinates
     bone_heads = {}
@@ -85,8 +109,10 @@ def convert_biped(input_path: Path, output_path: Path):
 
     for b in old_arm.data.bones:
         m_name = get_biped_mixamo_name(b.name)
-        # World position scaled to true meters
-        h_w = old_arm.matrix_world @ b.head_local
+        if is_rotated_biped:
+            h_w = ((R_yaw @ old_arm.matrix_world @ b.head_local) * arm_scale) + ground_shift
+        else:
+            h_w = old_arm.matrix_world @ b.head_local
         bone_heads[m_name] = h_w
         if b.parent:
             p_name = get_biped_mixamo_name(b.parent.name)
@@ -96,7 +122,6 @@ def convert_biped(input_path: Path, output_path: Path):
     for m_name, h_pos in bone_heads.items():
         ch_list = children_map.get(m_name, [])
         if ch_list:
-            # Find closest primary child (e.g. ForeArm for Arm, Hand for ForeArm)
             primary_ch = ch_list[0]
             for ch in ch_list:
                 if any(k in ch for k in ['ForeArm', 'Hand', 'Leg', 'Foot', 'ToeBase', 'Head', 'Neck', 'Spine']):
@@ -113,7 +138,7 @@ def convert_biped(input_path: Path, output_path: Path):
     # Extract native bone rolls from original Biped armature
     bone_rolls = {}
     for b in old_arm.data.bones:
-        m_name = BIPED_TO_MIXAMO.get(b.name, b.name)
+        m_name = get_biped_mixamo_name(b.name)
         bone_rolls[m_name] = b.matrix_local.to_3x3()
 
     # Create new Standard Mixamo Armature in true meters
@@ -128,13 +153,11 @@ def convert_biped(input_path: Path, output_path: Path):
     for m_name, h_pos in bone_heads.items():
         eb = new_arm_data.edit_bones.new(m_name)
         eb.head = h_pos
-        eb.tail = bone_tails[m_name]
+        eb.tail = bone_tails.get(m_name, h_pos + mathutils.Vector((0, 0, 0.10)))
 
     for m_name, p_name in bone_parents.items():
-        eb = new_arm_data.edit_bones.get(m_name)
-        p_eb = new_arm_data.edit_bones.get(p_name)
-        if eb and p_eb:
-            eb.parent = p_eb
+        if m_name in new_arm_data.edit_bones and p_name in new_arm_data.edit_bones:
+            new_arm_data.edit_bones[m_name].parent = new_arm_data.edit_bones[p_name]
 
     # Universal 3ds Max Biped to Mixamo basis transformation matrix
     # Maps Biped's (+X longitudinal, +Z up) to Mixamo's (+Y longitudinal, +Z forward)
@@ -146,9 +169,7 @@ def convert_biped(input_path: Path, output_path: Path):
 
     for eb in new_arm_data.edit_bones:
         if eb.name in bone_rolls:
-            # Transform native Biped local orientation matrix into standard Mixamo orientation
             m_mixamo_rot = bone_rolls[eb.name] @ R_biped_to_mixamo
-            # The roll is aligned to the transformed upward normal
             up_vec = m_mixamo_rot @ mathutils.Vector((0, 0, 1))
             eb.align_roll(up_vec)
         else:
@@ -157,18 +178,29 @@ def convert_biped(input_path: Path, output_path: Path):
     bpy.ops.object.mode_set(mode='OBJECT')
 
     # Convert meshes into pure unscaled meter geometry
-    char_meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     new_mesh_objs = []
 
     for m in char_meshes:
         new_m_data = m.data.copy()
-        # Scale centimeters to meters
-        for v in new_m_data.vertices:
-            v.co = v.co * unit_scale
-
         new_m = bpy.data.objects.new(m.name, new_m_data)
         bpy.context.collection.objects.link(new_m)
         new_m.matrix_world = mathutils.Matrix.Identity(4)
+
+        # Purge shape keys to prevent distorted morph targets on scaling
+        if new_m.data.shape_keys:
+            for kb in list(new_m.data.shape_keys.key_blocks):
+                new_m.shape_key_remove(kb)
+
+        if ez > 0.5:
+            # Rotated biped (e.g. EMERSO)
+            m_scale_fac = 0.01 if m.matrix_world.to_scale().z > 0.5 else 1.0
+            for v in new_m.data.vertices:
+                v.co = ((R_yaw @ m.matrix_world @ v.co) * m_scale_fac) + ground_shift
+        else:
+            # Standard biped (Ahmed, Trump, Glow)
+            unit_scale = 0.01 if m.scale.z < 5.0 else 1.0
+            for v in new_m.data.vertices:
+                v.co = v.co * unit_scale
 
         for mat in m.data.materials:
             new_m.data.materials.append(mat)
@@ -194,7 +226,7 @@ def convert_biped(input_path: Path, output_path: Path):
         if o not in new_mesh_objs and o != new_arm:
             bpy.data.objects.remove(o, do_unlink=True)
 
-    # Fix materials to opaque
+    # Fix materials to opaque & clay fallback for pitch black materials
     for mat in bpy.data.materials:
         if mat and mat.node_tree:
             bsdf = next((n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
@@ -204,6 +236,11 @@ def convert_biped(input_path: Path, output_path: Path):
                     for link in list(alpha_sock.links):
                         mat.node_tree.links.remove(link)
                     alpha_sock.default_value = 1.0
+                bc_sock = bsdf.inputs.get('Base Color')
+                if bc_sock and not bc_sock.is_linked:
+                    c = bc_sock.default_value
+                    if c[0] < 0.05 and c[1] < 0.05 and c[2] < 0.05:
+                        bc_sock.default_value = (0.7, 0.7, 0.7, 1.0)
             if hasattr(mat, 'blend_method'):
                 mat.blend_method = 'OPAQUE'
 
