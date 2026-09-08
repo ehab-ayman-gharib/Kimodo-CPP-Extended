@@ -39,6 +39,13 @@ def main():
     if is_biped:
         from convert_biped_to_standard import convert_biped
         convert_biped(in_path, out_path)
+        import json
+        (out_path.parent / "preview_meta.json").write_text(json.dumps({
+            "is_rigged": True,
+            "bone_count": 22,
+            "has_mesh": True,
+            "rig_type": "biped"
+        }), encoding="utf-8")
         sys.exit(0)
 
     # Remove non-character extra objects (like default cube, camera, lights, extra icospheres)
@@ -83,7 +90,21 @@ def main():
         export_current_frame=False,
         export_draco_mesh_compression_enable=False
     )
-    print(f"[Convert Preview] Successfully exported preview GLB to {out_path}")
+
+    arm_objs = [o for o in bpy.data.objects if o.type == 'ARMATURE']
+    is_rigged = len(arm_objs) > 0
+    bone_count = sum(len(a.data.bones) for a in arm_objs) if is_rigged else 0
+    has_mesh = any(o.type == 'MESH' for o in bpy.data.objects)
+
+    import json
+    (out_path.parent / "preview_meta.json").write_text(json.dumps({
+        "is_rigged": is_rigged,
+        "bone_count": bone_count,
+        "has_mesh": has_mesh,
+        "armature_name": arm_objs[0].name if arm_objs else None
+    }), encoding="utf-8")
+
+    print(f"[Convert Preview] Successfully exported preview GLB to {out_path} (is_rigged={is_rigged}, bones={bone_count})")
     sys.exit(0)
 
 if __name__ == "__main__":

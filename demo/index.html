@@ -536,6 +536,49 @@
       pointer-events: auto;
     }
 
+    .weight-paint-control {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(13, 18, 24, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(251, 176, 52, 0.35);
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+    }
+
+    .btn-weight-paint {
+      background: transparent;
+      border: 1px solid rgba(251, 176, 52, 0.45);
+      color: #fbb034;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-weight-paint:hover {
+      background: rgba(251, 176, 52, 0.15);
+      border-color: #fbb034;
+    }
+
+    .btn-weight-paint.active {
+      background: linear-gradient(135deg, #fbb034, #e08514);
+      color: #080d13;
+      border-color: #fbb034;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(251, 176, 52, 0.4);
+    }
+
     /* Dual View Mode: Guarantee 3D Character View clearance sliders are always 100% visible and unclipped */
     .stage-viewport-area.mode-dual .viewport-top-controls {
       flex-direction: column;
@@ -544,6 +587,11 @@
       top: 10px;
       right: 10px;
       max-width: calc(100% - 20px);
+    }
+
+    .stage-viewport-area.mode-dual .weight-paint-control {
+      order: 0;
+      padding: 2px 7px;
     }
 
     .stage-viewport-area.mode-dual .clip-control {
@@ -861,7 +909,26 @@
 
         <input type="file" id="charFile" accept=".fbx,.glb,.gltf" style="font-size:0.82rem;padding:6px;cursor:pointer">
 
-        <div style="display:flex;gap:8px">
+        <!-- Auto-Rig Section (Dynamically displayed when an unrigged 3D mesh is detected) -->
+        <div id="autoRigContainer" style="display:none;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(251,176,52,0.12),rgba(224,133,20,0.05));border:1px solid rgba(251,176,52,0.35);border-radius:9px;padding:10px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:0.83rem;font-weight:700;color:#fbb034;display:inline-flex;align-items:center;gap:5px">
+              ⚠️ Unrigged 3D Mesh Detected
+            </span>
+            <label style="font-size:0.75rem;color:var(--la-text);display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none" title="Toggle Vulkan GPU Acceleration for Neural Rigging">
+              <input type="checkbox" id="autoRigGpuCheck" checked style="cursor:pointer;accent-color:var(--la-cyan)">
+              <span style="font-weight:600">Vulkan GPU</span>
+            </label>
+          </div>
+          <div style="font-size:0.76rem;color:#b8c3d3;line-height:1.35">
+            This mesh has no skeleton. Auto-rig it with SkinTokens to predict skinning weights & convert to standard Mixamo bones:
+          </div>
+          <button id="autoRigBtn" type="button" class="btn-violet" style="background:linear-gradient(135deg,#fbb034,#e08514);color:#080d13;font-weight:700;border:none;box-shadow:0 3px 14px rgba(251,176,52,0.4);padding:8px 14px;font-size:0.84rem;cursor:pointer;border-radius:7px;display:flex;align-items:center;justify-content:center;gap:6px">
+            ⚡ Auto-Rig with SkinTokens
+          </button>
+        </div>
+
+        <div id="bakeControlsRow" style="display:flex;gap:8px">
           <select id="charFormat"
             style="flex:1;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem">
             <option value="glb">Standard GLB (glTF 2.0)</option>
@@ -948,8 +1015,19 @@
             </button>
           </div>
 
-          <!-- Viewport Header Controls (Arm Clearance & Clip selector) -->
+          <!-- Viewport Header Controls (Weight Paint, Arm Clearance & Clip selector) -->
           <div id="viewportTopControls" class="viewport-top-controls">
+            <!-- Weight Paint Heatmap Mode Control -->
+            <div id="weightPaintControl" class="weight-paint-control">
+              <button id="toggleWeightPaintBtn" type="button" class="btn-weight-paint" title="Toggle Skin Weights Heatmap Preview">
+                <span>🎨 Weights</span>
+              </button>
+              <div id="weightPaintOptions" style="display:none;align-items:center;gap:6px">
+                <select id="weightPaintBoneSelect" style="padding:1px 5px;font-size:0.72rem;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:5px;max-width:145px;cursor:pointer;outline:none" title="Select bone to view skinning weights heatmap"></select>
+                <span id="weightPaintStats" style="font-size:0.7rem;font-family:'JetBrains Mono',monospace;color:#fbb034;white-space:nowrap" title="Skinning weight stats for this joint"></span>
+              </div>
+            </div>
+
             <!-- Arm & Forearm Clearance Controls & Re-bake Button -->
             <div id="armClearanceControl" class="arm-clearance-control">
               <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Arm:</span>
@@ -1016,6 +1094,15 @@
               Upload your .fbx / .glb model on the left and click <b>Bake to Mesh</b> to preview it here in real-time
               3D!
             </div>
+          </div>
+
+          <!-- Floating Bone / Joint Hover Badge (SkinTokens style interactive skeleton) -->
+          <div id="jointHoverBadge" style="display:none;position:absolute;pointer-events:none;z-index:150;background:rgba(11,16,21,0.94);border:1px solid var(--la-cyan);border-radius:6px;padding:5px 9px;font-size:0.75rem;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.65);backdrop-filter:blur(6px);transform:translate(-50%,-125%);transition:opacity 0.12s ease">
+            <div id="jointHoverName" style="font-weight:700;color:var(--la-cyan);display:flex;align-items:center;gap:4px">
+              <span style="font-size:0.75rem">🦴</span>
+              <span id="jointHoverTitle">Bone</span>
+            </div>
+            <div id="jointHoverDetail" style="font-size:0.68rem;color:var(--la-muted);margin-top:2px">Click to inspect weights</div>
           </div>
 
           <div id="threeContainer" style="width:100%;height:100%"></div>
@@ -1294,6 +1381,9 @@
       if (threeControls && !isRecordingTurntable) {
         threeControls.update();
       }
+      if (isWeightPaintActive && weightPaintSkeletonHelper) {
+        weightPaintSkeletonHelper.update();
+      }
       if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
         threeRenderer.render(threeScene, threeCamera);
       }
@@ -1323,8 +1413,24 @@
     const armClearanceSlider = document.querySelector('#armClearanceSlider');
     const armClearanceVal = document.querySelector('#armClearanceVal');
     const forearmClearanceSlider = document.querySelector('#forearmClearanceSlider');
-    const forearmClearanceVal = document.querySelector('#forearmClearanceVal');
     const rebakeClearanceBtn = document.querySelector('#rebakeClearanceBtn');
+
+    // Weight Paint Mode Elements & State
+    const weightPaintControl = document.querySelector('#weightPaintControl');
+    const toggleWeightPaintBtn = document.querySelector('#toggleWeightPaintBtn');
+    const weightPaintOptions = document.querySelector('#weightPaintOptions');
+    const weightPaintBoneSelect = document.querySelector('#weightPaintBoneSelect');
+    const weightPaintStats = document.querySelector('#weightPaintStats');
+    const jointHoverBadge = document.querySelector('#jointHoverBadge');
+    const jointHoverTitle = document.querySelector('#jointHoverTitle');
+    const jointHoverDetail = document.querySelector('#jointHoverDetail');
+    let isWeightPaintActive = false;
+    let currentWeightPaintBone = null;
+    let weightPaintSkeletonHelper = null;
+    let weightPaintJointMarkers = [];
+    let weightPaintSkeletonMaterials = null;
+    let boneWeightStatsCache = new Map();
+    let hoveredBone = null;
 
     function findArmBones(model) {
       let leftArm = null;
@@ -1629,6 +1735,403 @@
       };
     }
 
+    // --- WEIGHT PAINT PREVIEW & INTERACTIVE SKELETON ENGINE (SkinTokens Style) ---
+    const _tempBoneWorldPos = new THREE.Vector3();
+
+    function buildBoneWeightStatsCache() {
+      boneWeightStatsCache.clear();
+      if (!currentCharacterModel) return;
+
+      currentCharacterModel.traverse(child => {
+        if (child.isSkinnedMesh && child.geometry && child.skeleton && child.skeleton.bones) {
+          const geom = child.geometry;
+          const skinIndex = geom.attributes.skinIndex;
+          const skinWeight = geom.attributes.skinWeight;
+          if (!skinIndex || !skinWeight) return;
+
+          const count = geom.attributes.position.count;
+          const sIdxArr = skinIndex.array;
+          const sWgtArr = skinWeight.array;
+          const itemSize = skinIndex.itemSize || 4;
+          const bones = child.skeleton.bones;
+
+          // Pre-populate bones in cache
+          bones.forEach(b => {
+            if (b && b.name && !boneWeightStatsCache.has(b.name)) {
+              boneWeightStatsCache.set(b.name, { max: 0, count: 0 });
+            }
+          });
+
+          if (sIdxArr && sWgtArr) {
+            for (let i = 0; i < count; i++) {
+              const off = i * itemSize;
+              for (let c = 0; c < itemSize; c++) {
+                const bIdx = Math.round(sIdxArr[off + c]);
+                const w = sWgtArr[off + c];
+                if (w > 0.001 && bones[bIdx]) {
+                  const bName = bones[bIdx].name;
+                  const stat = boneWeightStatsCache.get(bName);
+                  if (stat) {
+                    stat.count++;
+                    if (w > stat.max) stat.max = w;
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function setupWeightPaintSkeleton() {
+      cleanupWeightPaintSkeleton();
+      if (!currentCharacterModel || !threeScene) return;
+
+      // 1. Create X-ray styled SkeletonHelper
+      weightPaintSkeletonHelper = new THREE.SkeletonHelper(currentCharacterModel);
+      weightPaintSkeletonHelper.material.depthTest = false;
+      weightPaintSkeletonHelper.material.transparent = true;
+      weightPaintSkeletonHelper.material.opacity = 0.82;
+      weightPaintSkeletonHelper.material.linewidth = 2;
+      weightPaintSkeletonHelper.renderOrder = 998;
+      threeScene.add(weightPaintSkeletonHelper);
+
+      // 2. Compute character height to dynamically scale joint sphere markers
+      const bbox = new THREE.Box3().setFromObject(currentCharacterModel);
+      const modelHeight = Math.max(0.2, bbox.max.y - bbox.min.y);
+      const sphereRadius = Math.max(0.008, modelHeight * 0.012);
+
+      const sphereGeo = new THREE.SphereGeometry(sphereRadius, 8, 8);
+      const normalMat = new THREE.MeshBasicMaterial({
+        color: 0x00e5ff,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.85
+      });
+      const activeMat = new THREE.MeshBasicMaterial({
+        color: 0xffb034,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.95
+      });
+      const hoverMat = new THREE.MeshBasicMaterial({
+        color: 0xff3b30,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.95
+      });
+
+      weightPaintSkeletonMaterials = { normal: normalMat, active: activeMat, hover: hoverMat, geo: sphereGeo };
+      weightPaintJointMarkers = [];
+      const seenBones = new Set();
+
+      currentCharacterModel.traverse(node => {
+        if (node.isBone && !seenBones.has(node)) {
+          seenBones.add(node);
+          const marker = new THREE.Mesh(sphereGeo, normalMat);
+          marker.renderOrder = 999;
+          marker.userData = { bone: node, isJointMarker: true };
+          node.add(marker);
+          weightPaintJointMarkers.push(marker);
+        }
+      });
+
+      updateJointMarkerHighlight();
+    }
+
+    function cleanupWeightPaintSkeleton() {
+      if (weightPaintSkeletonHelper) {
+        if (threeScene) threeScene.remove(weightPaintSkeletonHelper);
+        weightPaintSkeletonHelper.geometry.dispose();
+        if (weightPaintSkeletonHelper.material && weightPaintSkeletonHelper.material.dispose) {
+          weightPaintSkeletonHelper.material.dispose();
+        }
+        weightPaintSkeletonHelper = null;
+      }
+      if (weightPaintJointMarkers && weightPaintJointMarkers.length > 0) {
+        weightPaintJointMarkers.forEach(m => {
+          if (m.parent) m.parent.remove(m);
+        });
+        weightPaintJointMarkers = [];
+      }
+      if (weightPaintSkeletonMaterials) {
+        if (weightPaintSkeletonMaterials.geo) weightPaintSkeletonMaterials.geo.dispose();
+        if (weightPaintSkeletonMaterials.normal) weightPaintSkeletonMaterials.normal.dispose();
+        if (weightPaintSkeletonMaterials.active) weightPaintSkeletonMaterials.active.dispose();
+        if (weightPaintSkeletonMaterials.hover) weightPaintSkeletonMaterials.hover.dispose();
+        weightPaintSkeletonMaterials = null;
+      }
+      hoveredBone = null;
+      if (jointHoverBadge) jointHoverBadge.style.display = 'none';
+      if (threeRenderer && threeRenderer.domElement) {
+        threeRenderer.domElement.style.cursor = 'default';
+      }
+    }
+
+    function updateJointMarkerHighlight() {
+      if (!weightPaintJointMarkers || weightPaintJointMarkers.length === 0 || !weightPaintSkeletonMaterials) return;
+      const targetBoneName = (weightPaintBoneSelect && weightPaintBoneSelect.value) || currentWeightPaintBone;
+
+      weightPaintJointMarkers.forEach(m => {
+        const b = m.userData.bone;
+        if (hoveredBone && b === hoveredBone) {
+          m.material = weightPaintSkeletonMaterials.hover;
+          m.scale.set(1.5, 1.5, 1.5);
+        } else if (targetBoneName && b.name === targetBoneName) {
+          m.material = weightPaintSkeletonMaterials.active;
+          m.scale.set(1.35, 1.35, 1.35);
+        } else {
+          m.material = weightPaintSkeletonMaterials.normal;
+          m.scale.set(1.0, 1.0, 1.0);
+        }
+      });
+    }
+
+    function findNearestBoneToMouse(clientX, clientY) {
+      if (!currentCharacterModel || !threeCamera || !threeRenderer || weightPaintJointMarkers.length === 0) return null;
+      const rect = threeRenderer.domElement.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      const mouseY = clientY - rect.top;
+
+      let bestBone = null;
+      let minDistance = 26; // 26px proximity radius
+      let bestScreen = null;
+
+      for (let i = 0; i < weightPaintJointMarkers.length; i++) {
+        const bone = weightPaintJointMarkers[i].userData.bone;
+        bone.getWorldPosition(_tempBoneWorldPos);
+        _tempBoneWorldPos.project(threeCamera);
+
+        // Check if in front of camera
+        if (_tempBoneWorldPos.z < 1.0) {
+          const sx = (_tempBoneWorldPos.x * 0.5 + 0.5) * rect.width;
+          const sy = (-_tempBoneWorldPos.y * 0.5 + 0.5) * rect.height;
+          const dist = Math.hypot(sx - mouseX, sy - mouseY);
+          if (dist < minDistance) {
+            minDistance = dist;
+            bestBone = bone;
+            bestScreen = { x: sx, y: sy };
+          }
+        }
+      }
+      return bestBone ? { bone: bestBone, screen: bestScreen } : null;
+    }
+
+    function handleWeightPaintPointerMove(e, isDragging) {
+      if (isDragging) {
+        if (jointHoverBadge) jointHoverBadge.style.display = 'none';
+        return;
+      }
+
+      const hit = findNearestBoneToMouse(e.clientX, e.clientY);
+      if (hit) {
+        hoveredBone = hit.bone;
+        threeRenderer.domElement.style.cursor = 'pointer';
+
+        if (jointHoverBadge) {
+          jointHoverTitle.textContent = hit.bone.name;
+          const stat = boneWeightStatsCache.get(hit.bone.name);
+          if (stat && stat.count > 0) {
+            jointHoverDetail.innerHTML = `Max weight: <b style="color:#fbb034">${Math.round(stat.max * 100)}%</b> · ${stat.count.toLocaleString()} verts`;
+          } else {
+            jointHoverDetail.textContent = 'No vertices weighted to this bone (Click to select)';
+          }
+
+          const rect = threeRenderer.domElement.getBoundingClientRect();
+          const padX = 75;
+          const padY = 35;
+          const clampedX = Math.max(padX, Math.min(rect.width - padX, hit.screen.x));
+          const clampedY = Math.max(padY, Math.min(rect.height - 25, hit.screen.y));
+          jointHoverBadge.style.left = `${clampedX}px`;
+          jointHoverBadge.style.top = `${clampedY}px`;
+          jointHoverBadge.style.display = 'block';
+        }
+      } else {
+        if (hoveredBone) {
+          hoveredBone = null;
+          threeRenderer.domElement.style.cursor = 'default';
+          if (jointHoverBadge) jointHoverBadge.style.display = 'none';
+        }
+      }
+      updateJointMarkerHighlight();
+    }
+
+    function handleWeightPaintClick(e) {
+      const hit = findNearestBoneToMouse(e.clientX, e.clientY);
+      if (hit && hit.bone) {
+        const boneName = hit.bone.name;
+        currentWeightPaintBone = boneName;
+        if (weightPaintBoneSelect) {
+          weightPaintBoneSelect.value = boneName;
+        }
+        updateWeightPaintHeatmap();
+        updateJointMarkerHighlight();
+      }
+    }
+
+    function updateWeightPaintHeatmap() {
+      if (!currentCharacterModel || !isWeightPaintActive) return;
+      const targetBoneName = (weightPaintBoneSelect && weightPaintBoneSelect.value) || currentWeightPaintBone;
+      if (!targetBoneName) return;
+
+      let totalAffectedVerts = 0;
+      let globalMaxWeight = 0;
+      let totalMeshVerts = 0;
+
+      currentCharacterModel.traverse(child => {
+        if (child.isSkinnedMesh && child.geometry) {
+          const geom = child.geometry;
+          const skinIndex = geom.attributes.skinIndex;
+          const skinWeight = geom.attributes.skinWeight;
+          if (!skinIndex || !skinWeight) return;
+
+          const count = geom.attributes.position.count;
+          totalMeshVerts += count;
+          let colors = geom.attributes.color;
+          if (!colors || colors.count !== count) {
+            colors = new THREE.BufferAttribute(new Float32Array(count * 3), 3);
+            geom.setAttribute('color', colors);
+          }
+
+          // Switch to weight material with skinning enabled so animation is preserved
+          if (!child._origMaterial) child._origMaterial = child.material;
+          if (!child._weightMaterial) {
+            child._weightMaterial = new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              roughness: 0.55,
+              metalness: 0.05,
+              skinning: true
+            });
+          }
+          child.material = child._weightMaterial;
+
+          // Find bone index in this mesh's skeleton
+          let boneIdx = -1;
+          if (child.skeleton && child.skeleton.bones) {
+            boneIdx = child.skeleton.bones.findIndex(b => b && b.name === targetBoneName);
+          }
+
+          const sIdxArr = skinIndex.array;
+          const sWgtArr = skinWeight.array;
+          const itemSize = skinIndex.itemSize || 4;
+          const colorArr = colors.array;
+
+          for (let i = 0; i < count; i++) {
+            let w = 0.0;
+            if (boneIdx >= 0) {
+              if (sIdxArr && sWgtArr) {
+                const off = i * itemSize;
+                for (let c = 0; c < itemSize; c++) {
+                  if (Math.round(sIdxArr[off + c]) === boneIdx) {
+                    w += sWgtArr[off + c];
+                  }
+                }
+              } else {
+                if (Math.round(skinIndex.getX(i)) === boneIdx) w += skinWeight.getX(i);
+                if (Math.round(skinIndex.getY(i)) === boneIdx) w += skinWeight.getY(i);
+                if (Math.round(skinIndex.getZ(i)) === boneIdx) w += skinWeight.getZ(i);
+                if (Math.round(skinIndex.getW(i)) === boneIdx) w += skinWeight.getW(i);
+              }
+            }
+            w = Math.min(1.0, Math.max(0.0, w));
+            if (w > 0.001) {
+              totalAffectedVerts++;
+              if (w > globalMaxWeight) globalMaxWeight = w;
+            }
+
+            // Turbo / Heatmap color gradient:
+            // 0.0: Dark Navy (0.04, 0.06, 0.20)
+            // 0.0 -> 0.25: Navy -> Cyan
+            // 0.25 -> 0.50: Cyan -> Green
+            // 0.50 -> 0.75: Green -> Yellow
+            // 0.75 -> 1.0: Yellow -> Bright Red
+            let r = 0.04, g = 0.06, b = 0.20;
+            if (w > 0.001) {
+              if (w < 0.25) {
+                const t = w / 0.25;
+                r = 0.0;
+                g = t * 0.85;
+                b = 0.85 + t * 0.15;
+              } else if (w < 0.50) {
+                const t = (w - 0.25) / 0.25;
+                r = 0.0;
+                g = 0.85 + t * 0.15;
+                b = 1.0 - t;
+              } else if (w < 0.75) {
+                const t = (w - 0.50) / 0.25;
+                r = t;
+                g = 1.0;
+                b = 0.0;
+              } else {
+                const t = (w - 0.75) / 0.25;
+                r = 1.0;
+                g = 1.0 - t * 0.95;
+                b = 0.0;
+              }
+            }
+            if (colorArr) {
+              const i3 = i * 3;
+              colorArr[i3] = r;
+              colorArr[i3 + 1] = g;
+              colorArr[i3 + 2] = b;
+            } else {
+              colors.setXYZ(i, r, g, b);
+            }
+          }
+          colors.needsUpdate = true;
+        }
+      });
+
+      if (weightPaintStats) {
+        const pct = Math.round(globalMaxWeight * 100);
+        weightPaintStats.textContent = `max ${pct}% · ${totalAffectedVerts.toLocaleString()} v`;
+      }
+
+      updateJointMarkerHighlight();
+
+      if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+        threeRenderer.render(threeScene, threeCamera);
+      }
+    }
+
+    function restoreOriginalMaterials() {
+      if (!currentCharacterModel) return;
+      currentCharacterModel.traverse(child => {
+        if (child.isSkinnedMesh && child._origMaterial) {
+          child.material = child._origMaterial;
+        }
+      });
+      if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+        threeRenderer.render(threeScene, threeCamera);
+      }
+    }
+
+    if (toggleWeightPaintBtn) {
+      toggleWeightPaintBtn.onclick = () => {
+        isWeightPaintActive = !isWeightPaintActive;
+        toggleWeightPaintBtn.classList.toggle('active', isWeightPaintActive);
+        if (weightPaintOptions) weightPaintOptions.style.display = isWeightPaintActive ? 'flex' : 'none';
+        if (isWeightPaintActive) {
+          buildBoneWeightStatsCache();
+          setupWeightPaintSkeleton();
+          updateWeightPaintHeatmap();
+        } else {
+          cleanupWeightPaintSkeleton();
+          restoreOriginalMaterials();
+        }
+      };
+    }
+
+    if (weightPaintBoneSelect) {
+      weightPaintBoneSelect.onchange = () => {
+        currentWeightPaintBone = weightPaintBoneSelect.value;
+        if (isWeightPaintActive) {
+          updateWeightPaintHeatmap();
+          updateJointMarkerHighlight();
+        }
+      };
+    }
+
     function playClipByIndex(idx) {
       if (!threeMixer || !currentGltfClips[idx]) return;
       if (currentAction) {
@@ -1668,6 +2171,43 @@
       threeControls.enableDamping = true;
       threeControls.dampingFactor = 0.05;
       threeControls.target.set(0, 0.9, 0);
+
+      // Interactive Clickable Skeleton Events (SkinTokens style)
+      let pointerDownPos = null;
+      let isPointerDragging = false;
+
+      threeRenderer.domElement.addEventListener('pointerdown', (e) => {
+        pointerDownPos = { x: e.clientX, y: e.clientY };
+        isPointerDragging = false;
+      });
+
+      threeRenderer.domElement.addEventListener('pointermove', (e) => {
+        if (pointerDownPos) {
+          const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+          if (dist > 6) isPointerDragging = true;
+        }
+        if (!isWeightPaintActive) return;
+        handleWeightPaintPointerMove(e, isPointerDragging);
+      });
+
+      threeRenderer.domElement.addEventListener('pointerup', (e) => {
+        if (isWeightPaintActive && !isPointerDragging && pointerDownPos) {
+          handleWeightPaintClick(e);
+        }
+        pointerDownPos = null;
+        isPointerDragging = false;
+      });
+
+      threeRenderer.domElement.addEventListener('pointerleave', () => {
+        if (hoveredBone) {
+          hoveredBone = null;
+          threeRenderer.domElement.style.cursor = 'default';
+          if (jointHoverBadge) jointHoverBadge.style.display = 'none';
+          updateJointMarkerHighlight();
+        }
+        pointerDownPos = null;
+        isPointerDragging = false;
+      });
 
       // Lights
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
@@ -1763,14 +2303,18 @@
           if (!leftPos && (
             name.includes('leftupleg') || name.includes('l_thigh') || name.includes('l thigh') ||
             name.includes('thigh.l') || name.includes('leg.l') || name.includes('l leg') ||
-            name.includes('leftleg') || name.includes('leftfoot') || name.includes('l_foot')
+            name.includes('leftleg') || name.includes('leftfoot') || name.includes('l_foot') ||
+            name.includes('leftarm') || name.includes('leftshoulder') || name.includes('l_arm') ||
+            name.includes('arm.l') || name.includes('shoulder.l') || name.includes('leftclavicle')
           )) {
             leftPos = new THREE.Vector3();
             node.getWorldPosition(leftPos);
           } else if (!rightPos && (
             name.includes('rightupleg') || name.includes('r_thigh') || name.includes('r thigh') ||
             name.includes('thigh.r') || name.includes('leg.r') || name.includes('r leg') ||
-            name.includes('rightleg') || name.includes('rightfoot') || name.includes('r_foot')
+            name.includes('rightleg') || name.includes('rightfoot') || name.includes('r_foot') ||
+            name.includes('rightarm') || name.includes('rightshoulder') || name.includes('r_arm') ||
+            name.includes('arm.r') || name.includes('shoulder.r') || name.includes('rightclavicle')
           )) {
             rightPos = new THREE.Vector3();
             node.getWorldPosition(rightPos);
@@ -1783,21 +2327,13 @@
         lateral.y = 0;
         if (lateral.lengthSq() > 0.00001) {
           lateral.normalize();
-          // Cross product: Up (0, 1, 0) x Lateral vector points in character's forward facing direction!
-          const forward = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), lateral).normalize();
+          // Cross product: Lateral (character Left) x Up (0, 1, 0) points directly out character's FRONT (face & chest)!
+          const forward = new THREE.Vector3().crossVectors(lateral, new THREE.Vector3(0, 1, 0)).normalize();
           return Math.atan2(forward.x, forward.z);
         }
       }
 
-      // If bone orientation is indeterminate, check if user already framed camera in viewport
-      if (threeCamera && threeControls && threeControls.target) {
-        const dx = threeCamera.position.x - threeControls.target.x;
-        const dz = threeCamera.position.z - threeControls.target.z;
-        if (Math.hypot(dx, dz) > 0.1) {
-          return Math.atan2(dx, dz);
-        }
-      }
-
+      // Default to front-facing (+Z, angle 0.0)
       return 0.0;
     }
 
@@ -1887,6 +2423,16 @@
 
         threeScene.add(currentCharacterModel);
 
+        // Check if model has bones (is rigged)
+        let hasBones = false;
+        let boneCount = 0;
+        currentCharacterModel.traverse(node => {
+          if (node.isBone) {
+            hasBones = true;
+            boneCount++;
+          }
+        });
+
         // Find and cache arm & forearm bones for clearance controls
         const armBones = findArmBones(currentCharacterModel);
         currentLeftArmBone = armBones.leftArm;
@@ -1911,7 +2457,78 @@
         }
         currentModelForward = new THREE.Vector3(fwdX, 0, fwdZ).normalize();
 
-        if (armClearanceControl) armClearanceControl.style.display = 'flex';
+        const autoRigContainer = document.querySelector('#autoRigContainer');
+        if (!hasBones && !isBaked) {
+          if (autoRigContainer) autoRigContainer.style.display = 'flex';
+          if (armClearanceControl) armClearanceControl.style.display = 'none';
+          meshBadge.textContent = `⚠️ ${charName} (Unrigged)`;
+          meshBadge.style.color = '#fbb034';
+          meshBadge.style.borderColor = 'rgba(251, 176, 52, 0.4)';
+          bakeBtn.disabled = true;
+          bakeBtn.style.animation = 'none';
+          bakeStatus.className = 'readout';
+          bakeStatus.innerHTML = `<span style="color:#fbb034">⚠️ Unrigged mesh detected (${charName}). Click <b>"⚡ Auto-Rig with SkinTokens"</b> above to generate a skeleton before baking.</span>`;
+          if (weightPaintControl) weightPaintControl.style.display = 'none';
+          if (isWeightPaintActive) {
+            isWeightPaintActive = false;
+            if (toggleWeightPaintBtn) toggleWeightPaintBtn.classList.remove('active');
+            if (weightPaintOptions) weightPaintOptions.style.display = 'none';
+            restoreOriginalMaterials();
+          }
+        } else {
+          if (autoRigContainer) autoRigContainer.style.display = 'none';
+          if (armClearanceControl) armClearanceControl.style.display = 'flex';
+          meshBadge.textContent = `👤 ${charName}` + (boneCount > 0 && !charName.includes('Animated') ? ` (${boneCount} bones)` : '');
+          meshBadge.style.color = '';
+          meshBadge.style.borderColor = '';
+          bakeBtn.disabled = false;
+
+          // Populate Weight Paint Bone List
+          if (hasBones) {
+            if (weightPaintControl) weightPaintControl.style.display = 'flex';
+            const boneNames = [];
+            const seenBones = new Set();
+            currentCharacterModel.traverse(node => {
+              if (node.isSkinnedMesh && node.skeleton && node.skeleton.bones) {
+                node.skeleton.bones.forEach(b => {
+                  if (b && b.name && !seenBones.has(b.name)) {
+                    seenBones.add(b.name);
+                    boneNames.push(b.name);
+                  }
+                });
+              } else if (node.isBone && node.name && !seenBones.has(node.name)) {
+                seenBones.add(node.name);
+                boneNames.push(node.name);
+              }
+            });
+
+            if (boneNames.length > 0 && weightPaintBoneSelect) {
+              weightPaintBoneSelect.innerHTML = '';
+              let defaultIdx = 0;
+              boneNames.forEach((name, i) => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                weightPaintBoneSelect.appendChild(opt);
+                const low = name.toLowerCase();
+                if (defaultIdx === 0 && (low.includes('arm') || low.includes('forearm') || low.includes('spine'))) {
+                  defaultIdx = i;
+                }
+              });
+              weightPaintBoneSelect.selectedIndex = defaultIdx;
+              currentWeightPaintBone = boneNames[defaultIdx];
+            }
+
+            buildBoneWeightStatsCache();
+            if (isWeightPaintActive) {
+              setupWeightPaintSkeleton();
+              updateWeightPaintHeatmap();
+            }
+          } else {
+            if (weightPaintControl) weightPaintControl.style.display = 'none';
+          }
+        }
+
         if (viewportTopControls) viewportTopControls.style.display = 'flex';
 
         // Setup Animation & Clips Dropdown
@@ -2020,6 +2637,7 @@
     // Global tracker for active user character in session
     let currentUploadedBlobUrl = null;
     let currentUploadedFileName = null;
+    let currentPreviewId = null;
 
     // --- GALLERY & INTERACTION LOGIC ---
     async function select(a) {
@@ -2073,10 +2691,22 @@
         currentLeftForeArmBone = null;
         currentRightForeArmBone = null;
         currentModelForward = null;
+        currentPreviewId = null;
+        if (isWeightPaintActive) {
+          isWeightPaintActive = false;
+          restoreOriginalMaterials();
+        }
+        if (toggleWeightPaintBtn) toggleWeightPaintBtn.classList.remove('active');
+        if (weightPaintOptions) weightPaintOptions.style.display = 'none';
+        if (weightPaintControl) weightPaintControl.style.display = 'none';
+        const autoRigContainer = document.querySelector('#autoRigContainer');
+        if (autoRigContainer) autoRigContainer.style.display = 'none';
         if (armClearanceControl) armClearanceControl.style.display = 'none';
         if (viewportTopControls) viewportTopControls.style.display = 'none';
         meshPlaceholder.style.display = 'flex';
         meshBadge.textContent = '👤 Retargeted 3D Mesh';
+        meshBadge.style.color = '';
+        meshBadge.style.borderColor = '';
         characterBadge.style.display = 'none';
         clipControl.style.display = 'none';
         if (unloadCharBtn) unloadCharBtn.style.display = 'none';
@@ -2330,56 +2960,136 @@
       draw();
     }, { passive: false });
 
-    // --- BAKE TO CUSTOM MESH EVENT ---
+    // --- BAKE TO CUSTOM MESH & AUTO-RIG EVENT ---
     const charFile = document.querySelector('#charFile');
     const charFormat = document.querySelector('#charFormat');
     const bakeBtn = document.querySelector('#bakeBtn');
     const bakeStatus = document.querySelector('#bakeStatus');
     const bakeDownload = document.querySelector('#bakeDownload');
+    const autoRigContainer = document.querySelector('#autoRigContainer');
+    const autoRigGpuCheck = document.querySelector('#autoRigGpuCheck');
+    const autoRigBtn = document.querySelector('#autoRigBtn');
 
-    // Instant preview when a GLB/GLTF or FBX character is chosen
+    // Instant preview & rig status inspection when a GLB/GLTF or FBX character is chosen
     charFile.onchange = async () => {
       const file = charFile.files[0];
       if (file) {
         isCharacterAnimationBaked = false;
         showTurntableButtons(false);
         currentUploadedFileName = file.name;
+        currentPreviewId = null;
+        if (autoRigContainer) autoRigContainer.style.display = 'none';
         resetArmClearanceSlider();
-        const isFbx = file.name.toLowerCase().endsWith('.fbx');
-        const isGlb = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf');
 
-        if (isGlb) {
-          if (currentUploadedBlobUrl && currentUploadedBlobUrl.startsWith('blob:')) URL.revokeObjectURL(currentUploadedBlobUrl);
-          currentUploadedBlobUrl = URL.createObjectURL(file);
-          loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'glb');
-        } else if (isFbx) {
-          meshBadge.textContent = `⏳ Loading textures for ${file.name}…`;
-          bakeStatus.className = 'readout progress';
-          bakeStatus.textContent = `Loading ${file.name} textures and materials…`;
-          try {
-            const res = await fetch('/api/preview_model?filename=' + encodeURIComponent(file.name), {
-              method: 'POST',
-              body: file
-            });
-            const data = await res.json();
-            if (data.preview_url) {
-              currentUploadedBlobUrl = data.preview_url;
-              loadRetargetedModel(data.preview_url, file.name.split('.')[0] + ' (Rest Pose Preview)', 'glb');
+        const ext = file.name.toLowerCase();
+        const isFbx = ext.endsWith('.fbx');
+
+        meshBadge.textContent = `⏳ Loading ${file.name}…`;
+        bakeStatus.className = 'readout progress';
+        bakeStatus.textContent = `Processing and inspecting ${file.name}…`;
+
+        try {
+          // Send model to backend preview endpoint to inspect rig status & generate clean preview
+          const res = await fetch('/api/preview_model?filename=' + encodeURIComponent(file.name), {
+            method: 'POST',
+            body: file
+          });
+          const data = await res.json();
+          if (data.status === 'success' && data.preview_url) {
+            currentPreviewId = data.preview_id;
+            currentUploadedBlobUrl = data.preview_url;
+            loadRetargetedModel(data.preview_url, file.name.split('.')[0] + ' (Rest Pose Preview)', 'glb');
+            if (data.is_rigged === false || data.bone_count === 0) {
+              if (autoRigContainer) autoRigContainer.style.display = 'flex';
+              bakeBtn.disabled = true;
+              bakeBtn.style.animation = 'none';
+              bakeStatus.className = 'readout';
+              bakeStatus.innerHTML = `<span style="color:#fbb034">⚠️ Unrigged mesh detected (${file.name}). Click <b>"⚡ Auto-Rig with SkinTokens"</b> above to generate a skeleton before baking.</span>`;
             } else {
-              currentUploadedBlobUrl = URL.createObjectURL(file);
-              loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'fbx');
+              if (autoRigContainer) autoRigContainer.style.display = 'none';
+              bakeBtn.disabled = false;
+              bakeStatus.className = 'readout';
+              bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character <b>${file.name}</b> (${data.bone_count || 0} bones) loaded. Click <b>"Bake to Mesh"</b> to animate!</span>`;
+              bakeBtn.style.animation = 'pulse 1.2s infinite';
             }
-          } catch (err) {
-            console.warn("Preview fetch error, fallback to direct loader:", err);
+          } else {
+            // Direct client fallback
             currentUploadedBlobUrl = URL.createObjectURL(file);
-            loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', 'fbx');
+            loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', isFbx ? 'fbx' : 'glb');
           }
+        } catch (err) {
+          console.warn("Preview inspection error, fallback to direct loader:", err);
+          currentUploadedBlobUrl = URL.createObjectURL(file);
+          loadRetargetedModel(currentUploadedBlobUrl, file.name.split('.')[0] + ' (Rest Pose Preview)', isFbx ? 'fbx' : 'glb');
         }
-        bakeStatus.className = 'readout';
-        bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character <b>${file.name}</b> loaded. Click <b>"Bake to Mesh"</b> to animate!</span>`;
-        bakeBtn.style.animation = 'pulse 1.2s infinite';
       }
     };
+
+    // Auto-Rig Button Handler using SkinTokens neural auto-rigging
+    if (autoRigBtn) {
+      autoRigBtn.onclick = async () => {
+        if (autoRigBtn.disabled) return;
+        const file = charFile.files[0];
+        if (!file && !currentPreviewId) {
+          bakeStatus.className = 'error';
+          bakeStatus.textContent = 'Please choose a character file first.';
+          return;
+        }
+
+        const useGpu = autoRigGpuCheck ? autoRigGpuCheck.checked : true;
+        const device = useGpu ? 'vulkan' : 'cpu';
+        const deviceLabel = useGpu ? 'Vulkan GPU' : 'CPU';
+
+        autoRigBtn.disabled = true;
+        const origBtnText = autoRigBtn.innerHTML;
+        autoRigBtn.innerHTML = `<span>⏳ Auto-Rigging (${deviceLabel})...</span>`;
+        bakeStatus.className = 'readout progress';
+        bakeStatus.innerHTML = `Running SkinTokens neural auto-rigging on <b>${currentUploadedFileName || (file ? file.name : 'mesh')}</b> with <b>${deviceLabel}</b> acceleration...`;
+
+        try {
+          let rigUrl = `/api/auto_rig?filename=${encodeURIComponent(currentUploadedFileName || file.name)}&device=${device}`;
+          if (currentPreviewId) {
+            rigUrl += `&preview_id=${currentPreviewId}`;
+          }
+
+          let res;
+          if (currentPreviewId) {
+            res = await fetch(rigUrl, { method: 'POST' });
+          } else {
+            res = await fetch(rigUrl, { method: 'POST', body: file });
+          }
+
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'SkinTokens auto-rigging failed');
+          }
+
+          // Rigging succeeded!
+          currentPreviewId = data.preview_id;
+          currentUploadedBlobUrl = data.preview_url;
+          currentUploadedFileName = data.filename;
+
+          if (autoRigContainer) autoRigContainer.style.display = 'none';
+
+          bakeStatus.className = 'readout';
+          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Auto-rigging complete in ${data.elapsed_seconds}s! Mixamo skeleton (${data.bone_count} bones) attached. Click <b>"Bake to Mesh"</b> to animate!</span>`;
+
+          bakeBtn.disabled = false;
+          bakeBtn.style.animation = 'pulse 1.2s infinite';
+
+          // Load the newly rigged Mixamo GLB into the 3D viewport in rest pose
+          loadRetargetedModel(data.preview_url + '?t=' + Date.now(), `${data.character_name || 'Character'} (Rigged)`, 'glb', false);
+
+        } catch (err) {
+          console.error("Auto-rig error:", err);
+          bakeStatus.className = 'error';
+          bakeStatus.textContent = `Auto-rig error: ${err.message}`;
+        } finally {
+          autoRigBtn.disabled = false;
+          autoRigBtn.innerHTML = origBtnText;
+        }
+      };
+    }
 
     bakeBtn.onclick = async () => {
       bakeBtn.style.animation = 'none';
@@ -2389,7 +3099,7 @@
         return;
       }
       const file = charFile.files[0];
-      if (!file) {
+      if (!file && !currentPreviewId) {
         bakeStatus.className = 'error';
         bakeStatus.textContent = 'Please choose a .fbx or .glb character file.';
         return;
@@ -2397,11 +3107,14 @@
       bakeBtn.disabled = true;
       bakeDownload.hidden = true;
       bakeStatus.className = 'readout progress';
-      bakeStatus.textContent = `Uploading ${file.name} & baking animation…`;
+      bakeStatus.textContent = `Uploading ${currentUploadedFileName || file.name} & baking animation…`;
 
       try {
-        const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
-        const res = await fetch(url, { method: 'POST', body: file });
+        let url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(currentUploadedFileName || file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
+        if (currentPreviewId) {
+          url += `&preview_id=${currentPreviewId}`;
+        }
+        const res = await fetch(url, { method: 'POST', body: file || '' });
         const data = await res.json();
         if (!res.ok || data.error) {
           throw new Error(data.error || 'Baking failed');
@@ -2709,6 +3422,11 @@
         }
       }
 
+      // 1.0s front hero still buffer: holds steady on the front face/chest before rotation begins
+      const leadInDuration = 1.0;
+      const spinDuration = duration;
+      const totalDuration = leadInDuration + spinDuration;
+
       function stepTurntable(now) {
         if (!isRecordingTurntable) return;
         if (cancelled) {
@@ -2717,10 +3435,22 @@
         }
 
         const elapsed = (now - startTime) / 1000.0;
-        const progress = Math.min(1.0, elapsed / duration);
+        let rotProgress = 0.0;
+        let animProgress = 0.0;
+
+        if (elapsed < leadInDuration) {
+          // 1.0s Front Hero Still Buffer: camera holds steady on front face, animation holds frame 0
+          rotProgress = 0.0;
+          animProgress = 0.0;
+        } else {
+          // Active 360° turntable rotation & animation playback
+          const spinElapsed = elapsed - leadInDuration;
+          rotProgress = Math.min(1.0, spinElapsed / spinDuration);
+          animProgress = rotProgress;
+        }
 
         // Continuous smooth 360 rotation that keeps turning until animation ends
-        const curAngle = startAngle + progress * Math.PI * 2;
+        const curAngle = startAngle + rotProgress * Math.PI * 2;
         threeCamera.position.x = targetFocus.x + orbitRadius * Math.sin(curAngle);
         threeCamera.position.z = targetFocus.z + orbitRadius * Math.cos(curAngle);
         threeCamera.position.y = camY;
@@ -2728,24 +3458,30 @@
         threeControls.target.copy(targetFocus);
 
         // Keep character animation time frame-perfect in sync with turntable progress
-        const animTime = progress * duration;
+        const animTime = animProgress * spinDuration;
         if (threeMixer) {
           syncCharacterAnimation(animTime);
         }
         if (selected && selected.frames) {
-          frame = Math.min(selected.frames - 1, Math.floor(progress * selected.frames));
+          frame = Math.min(selected.frames - 1, Math.floor(animProgress * selected.frames));
         }
 
         // Render current 3D frame into canvas stream
         threeRenderer.render(threeScene, threeCamera);
 
         // Update progress HUD
-        const pct = Math.round(progress * 100);
-        const remSec = Math.max(0, duration - elapsed).toFixed(1);
-        turntableProgressText.textContent = `${pct}% (${remSec}s)`;
-        turntableProgressBar.style.width = `${pct}%`;
+        if (elapsed < leadInDuration) {
+          const holdRem = Math.max(0, leadInDuration - elapsed).toFixed(1);
+          turntableProgressText.textContent = `Front Hold (${holdRem}s)`;
+          turntableProgressBar.style.width = `${Math.round((elapsed / leadInDuration) * 15)}%`;
+        } else {
+          const pct = Math.round(rotProgress * 100);
+          const remSec = Math.max(0, totalDuration - elapsed).toFixed(1);
+          turntableProgressText.textContent = `${pct}% (${remSec}s)`;
+          turntableProgressBar.style.width = `${15 + Math.round(rotProgress * 85)}%`;
+        }
 
-        if (progress >= 1.0) {
+        if (elapsed >= totalDuration) {
           finishRecording(true);
           return;
         }
@@ -2811,6 +3547,7 @@
       }
       currentUploadedBlobUrl = null;
       currentUploadedFileName = null;
+      currentPreviewId = null;
       if (charFile) {
         charFile.value = '';
       }
@@ -2820,9 +3557,20 @@
       isCharacterAnimationBaked = false;
       showTurntableButtons(false);
 
-      // 5. Reset viewport UI elements
+      // 5. Reset viewport UI elements & auto-rig container
+      if (isWeightPaintActive) {
+        isWeightPaintActive = false;
+        cleanupWeightPaintSkeleton();
+        restoreOriginalMaterials();
+      }
+      if (toggleWeightPaintBtn) toggleWeightPaintBtn.classList.remove('active');
+      if (weightPaintOptions) weightPaintOptions.style.display = 'none';
+      if (weightPaintControl) weightPaintControl.style.display = 'none';
+      if (autoRigContainer) autoRigContainer.style.display = 'none';
       meshPlaceholder.style.display = 'flex';
       meshBadge.textContent = '👤 Retargeted 3D Mesh';
+      meshBadge.style.color = '';
+      meshBadge.style.borderColor = '';
       characterBadge.style.display = 'none';
       clipControl.style.display = 'none';
       if (unloadCharBtn) unloadCharBtn.style.display = 'none';

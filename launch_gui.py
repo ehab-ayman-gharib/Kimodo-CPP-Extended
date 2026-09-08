@@ -12,6 +12,7 @@ import time
 import shutil
 import struct
 import base64
+import re
 import secrets
 import threading
 import subprocess
@@ -306,6 +307,55 @@ def find_blender():
     p = shutil.which("blender")
     return p if p else "blender"
 
+def find_skintokens():
+    exe = ROOT_DIR / "bin" / "skintokens" / "skintokens-cli.exe"
+    models = ROOT_DIR / "models" / "skintokens"
+    script = ROOT_DIR / "scripts" / "convert_to_mixamo.py"
+    return (
+        exe if exe.is_file() else None,
+        models if models.is_dir() else None,
+        script if script.is_file() else None
+    )
+
+_cached_vulkan_env = None
+
+def get_vulkan_env():
+    global _cached_vulkan_env
+    if _cached_vulkan_env is not None:
+        return _cached_vulkan_env.copy()
+
+    env = os.environ.copy()
+    try:
+        skintokens_exe, skintokens_models, _ = find_skintokens()
+        if skintokens_exe and skintokens_models:
+            proc = subprocess.run(
+                [str(skintokens_exe), "inspect", str(skintokens_models), "--device", "vulkan"],
+                capture_output=True,
+                text=True,
+                timeout=6
+            )
+            devices = []
+            for line in proc.stderr.splitlines():
+                m = re.match(r"ggml_vulkan:\s+(\d+)\s+=\s+(.*?)\s+\((.*?)\)", line)
+                if m:
+                    devices.append((int(m.group(1)), m.group(2), m.group(3)))
+            best_idx = 0
+            for idx, name, vendor in devices:
+                nl = name.lower()
+                vl = vendor.lower()
+                if any(k in nl or k in vl for k in ["nvidia", "geforce", "rtx", "amd", "radeon", "discrete"]):
+                    best_idx = idx
+                    print(f"[Vulkan] Auto-selected discrete GPU [{best_idx}]: {name} ({vendor})")
+                    break
+            env["GGML_VK_VISIBLE_DEVICES"] = str(best_idx)
+            _cached_vulkan_env = env
+            return env.copy()
+    except Exception as e:
+        print(f"[Vulkan] Device discovery warning: {e}")
+    env["GGML_VK_VISIBLE_DEVICES"] = "1"
+    _cached_vulkan_env = env
+    return env.copy()
+
 class KimodoHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         print(f"[HTTP] {self.address_string()} - {format % args}")
@@ -536,6 +586,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             out_format = query.get("format", ["glb"])[0].lower()
             raw_filename = query.get("filename", ["character.fbx"])[0]
             filename = urllib.parse.unquote(raw_filename)
+            preview_id = query.get("preview_id", [""])[0]
             arm_clearance = float(query.get("arm_clearance", [0.0])[0]) if "arm_clearance" in query else 0.0
             forearm_clearance = float(query.get("forearm_clearance", [0.0])[0]) if "forearm_clearance" in query else 0.0
 
@@ -545,6 +596,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     req = json.loads(body.decode('utf-8'))
                     aid = req.get("animation_id", aid)
                     filename = urllib.parse.unquote(req.get("filename", filename))
+                    preview_id = req.get("preview_id", preview_id)
                     out_format = req.get("format", out_format)
                     file_bytes = base64.b64decode(req.get("file_data", "")) if req.get("file_data") else None
                     if "arm_clearance" in req:
@@ -580,6 +632,18 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(json.dumps({"error": f"Animation directory {aid} not found"}).encode('utf-8'))
                     return
+
+                # If preview_id is provided, check if an auto-rigged Mixamo GLB is available in that preview folder
+                if preview_id and (OUTPUT_DIR / "_preview" / preview_id).is_dir():
+                    prev_dir = OUTPUT_DIR / "_preview" / preview_id
+                    rigged_candidates = list(prev_dir.glob("*_mixamo.glb"))
+                    if not rigged_candidates and (prev_dir / "preview.glb").is_file():
+                        rigged_candidates = [prev_dir / "preview.glb"]
+                    if rigged_candidates:
+                        rigged_src = rigged_candidates[0]
+                        char_path = item_dir / f"upload_character{rigged_src.suffix}"
+                        shutil.copyfile(rigged_src, char_path)
+                        print(f"[Retarget] Using auto-rigged model from preview {preview_id}: {rigged_src.name}")
 
                 char_ext = Path(filename).suffix or ".fbx"
                 char_path = item_dir / f"upload_character{char_ext}"
@@ -695,18 +759,175 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             ]
             proc = subprocess.run(cmd, capture_output=True, text=True)
             if proc.returncode == 0 and out_glb.is_file():
+                meta_file = prev_dir / "preview_meta.json"
+                is_rigged = True
+                bone_count = 0
+                if meta_file.is_file():
+                    try:
+                        meta_data = json.loads(meta_file.read_text(encoding="utf-8"))
+                        is_rigged = bool(meta_data.get("is_rigged", True))
+                        bone_count = int(meta_data.get("bone_count", 0))
+                    except Exception:
+                        pass
+
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "status": "success",
-                    "preview_url": f"/api/preview_model/download/{pid}/preview.glb"
+                    "preview_url": f"/api/preview_model/download/{pid}/preview.glb",
+                    "preview_id": pid,
+                    "filename": filename,
+                    "is_rigged": is_rigged,
+                    "bone_count": bone_count
                 }).encode('utf-8'))
             else:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": proc.stderr or proc.stdout or "Preview conversion failed"}).encode('utf-8'))
+
+        elif path == "/api/auto_rig":
+            length = int(self.headers.get("Content-Length", 0))
+            raw_filename = query.get("filename", ["character.glb"])[0]
+            filename = urllib.parse.unquote(raw_filename)
+            preview_id = query.get("preview_id", [""])[0]
+            device = query.get("device", ["vulkan"])[0].lower()
+            if device not in ["vulkan", "cpu"]:
+                device = "vulkan"
+
+            file_bytes = None
+            if "application/json" in content_type:
+                body = self.rfile.read(length)
+                req = json.loads(body.decode('utf-8'))
+                filename = urllib.parse.unquote(req.get("filename", filename))
+                preview_id = req.get("preview_id", preview_id)
+                device = req.get("device", device)
+                if req.get("file_data"):
+                    file_bytes = base64.b64decode(req["file_data"])
+            elif length > 0 and not preview_id:
+                file_bytes = self.rfile.read(length)
+
+            if device not in ["vulkan", "cpu"]:
+                device = "vulkan"
+
+            skintokens_exe, skintokens_models, convert_mixamo_script = find_skintokens()
+            if not skintokens_exe or not skintokens_models or not convert_mixamo_script:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "SkinTokens binaries, models, or conversion script not found in Kimodo-CPP."}).encode('utf-8'))
+                return
+
+            blender_exe = find_blender()
+
+            if preview_id and (OUTPUT_DIR / "_preview" / preview_id).is_dir():
+                work_dir = OUTPUT_DIR / "_preview" / preview_id
+                work_id = preview_id
+            else:
+                work_id = secrets.token_hex(6)
+                work_dir = OUTPUT_DIR / "_preview" / work_id
+                work_dir.mkdir(parents=True, exist_ok=True)
+
+            char_ext = Path(filename).suffix.lower() or ".glb"
+            raw_input_path = work_dir / f"input_char{char_ext}"
+            if file_bytes is not None:
+                raw_input_path.write_bytes(file_bytes)
+
+            input_glb = work_dir / "preview.glb"
+            if not input_glb.is_file():
+                if char_ext in [".glb", ".gltf"] and raw_input_path.is_file():
+                    input_glb = raw_input_path
+                elif raw_input_path.is_file():
+                    script_preview = ROOT_DIR / "scripts/convert_to_preview_glb.py"
+                    conv_cmd = [str(blender_exe), "-b", "-P", str(script_preview), "--", str(raw_input_path), str(input_glb)]
+                    subprocess.run(conv_cmd, capture_output=True, text=True)
+
+            if not input_glb.is_file():
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": f"Could not prepare input mesh GLB from {filename}."}).encode('utf-8'))
+                return
+
+            print(f"[Auto-Rig] Starting SkinTokens neural rig on {input_glb.name} (device: {device})...")
+            tokens_rigged_glb = work_dir / "tokens_rigged.glb"
+
+            rig_cmd = [
+                str(skintokens_exe),
+                "rig",
+                str(skintokens_models),
+                str(input_glb),
+                str(tokens_rigged_glb),
+                "--device", device
+            ]
+            t_start = time.time()
+            vk_env = get_vulkan_env() if device == "vulkan" else os.environ.copy()
+            rig_proc = subprocess.run(rig_cmd, env=vk_env, capture_output=True, text=True)
+            t_elapsed = round(time.time() - t_start, 1)
+            print(f"[Auto-Rig] skintokens rig finished in {t_elapsed}s (returncode: {rig_proc.returncode})")
+
+            if rig_proc.returncode != 0 or not tokens_rigged_glb.is_file() or tokens_rigged_glb.stat().st_size < 1000:
+                err = rig_proc.stderr or rig_proc.stdout or "SkinTokens rig failed to generate skeleton."
+                print(f"[Auto-Rig] Error: {err}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": err[-500:]}).encode('utf-8'))
+                return
+
+            # Convert to Mixamo bone naming & synchronize vertex groups
+            clean_stem = Path(filename).stem.replace(" ", "_")
+            mixamo_rigged_glb = work_dir / f"{clean_stem}_mixamo.glb"
+            mixamo_cmd = [
+                str(blender_exe),
+                "-b",
+                "-P",
+                str(convert_mixamo_script),
+                "--",
+                str(tokens_rigged_glb),
+                str(mixamo_rigged_glb),
+                "Mixamo",
+                "mixamorig:"
+            ]
+            mixamo_proc = subprocess.run(mixamo_cmd, capture_output=True, text=True)
+            print(f"[Auto-Rig] Mixamo conversion finished in Blender (returncode: {mixamo_proc.returncode})")
+
+            if mixamo_proc.returncode != 0 or not mixamo_rigged_glb.is_file():
+                err = mixamo_proc.stderr or mixamo_proc.stdout or "Mixamo bone conversion failed."
+                print(f"[Auto-Rig] Error: {err}")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": err[-500:]}).encode('utf-8'))
+                return
+
+            try:
+                shutil.copyfile(mixamo_rigged_glb, work_dir / "preview.glb")
+                (work_dir / "preview_meta.json").write_text(json.dumps({
+                    "is_rigged": True,
+                    "bone_count": 22,
+                    "has_mesh": True,
+                    "rig_type": "mixamo"
+                }), encoding="utf-8")
+            except Exception as e:
+                print(f"[Auto-Rig] Note on copying preview: {e}")
+
+            download_url = f"/api/preview_model/download/{work_id}/{clean_stem}_mixamo.glb"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "success",
+                "character_name": f"{clean_stem} (Mixamo)",
+                "filename": f"{clean_stem}_mixamo.glb",
+                "preview_url": download_url,
+                "download_url": download_url,
+                "preview_id": work_id,
+                "is_rigged": True,
+                "bone_count": 22,
+                "elapsed_seconds": t_elapsed
+            }).encode('utf-8'))
 
         elif path == "/api/open_folder":
             try:
