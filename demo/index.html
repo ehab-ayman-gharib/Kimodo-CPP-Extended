@@ -1425,7 +1425,7 @@
     const jointHoverTitle = document.querySelector('#jointHoverTitle');
     const jointHoverDetail = document.querySelector('#jointHoverDetail');
     let isWeightPaintActive = false;
-    let currentWeightPaintBone = null;
+    let currentWeightPaintBone = '__ALL_BONES__';
     let weightPaintSkeletonHelper = null;
     let weightPaintJointMarkers = [];
     let weightPaintSkeletonMaterials = null;
@@ -1851,6 +1851,10 @@
       if (weightPaintJointMarkers && weightPaintJointMarkers.length > 0) {
         weightPaintJointMarkers.forEach(m => {
           if (m.parent) m.parent.remove(m);
+          if (m._allBonesMat) {
+            m._allBonesMat.dispose();
+            m._allBonesMat = null;
+          }
         });
         weightPaintJointMarkers = [];
       }
@@ -1871,15 +1875,28 @@
     function updateJointMarkerHighlight() {
       if (!weightPaintJointMarkers || weightPaintJointMarkers.length === 0 || !weightPaintSkeletonMaterials) return;
       const targetBoneName = (weightPaintBoneSelect && weightPaintBoneSelect.value) || currentWeightPaintBone;
+      const isAllBonesMode = (targetBoneName === '__ALL_BONES__');
 
-      weightPaintJointMarkers.forEach(m => {
+      weightPaintJointMarkers.forEach((m, idx) => {
         const b = m.userData.bone;
         if (hoveredBone && b === hoveredBone) {
           m.material = weightPaintSkeletonMaterials.hover;
           m.scale.set(1.5, 1.5, 1.5);
-        } else if (targetBoneName && b.name === targetBoneName) {
+        } else if (!isAllBonesMode && targetBoneName && b.name === targetBoneName) {
           m.material = weightPaintSkeletonMaterials.active;
           m.scale.set(1.35, 1.35, 1.35);
+        } else if (isAllBonesMode) {
+          if (!m._allBonesMat) {
+            const hue = ((idx * 137.5077) % 360) / 360;
+            m._allBonesMat = new THREE.MeshBasicMaterial({
+              color: new THREE.Color().setHSL(hue, 0.90, 0.55),
+              depthTest: false,
+              transparent: true,
+              opacity: 0.95
+            });
+          }
+          m.material = m._allBonesMat;
+          m.scale.set(1.15, 1.15, 1.15);
         } else {
           m.material = weightPaintSkeletonMaterials.normal;
           m.scale.set(1.0, 1.0, 1.0);
@@ -1971,9 +1988,10 @@
 
     function updateWeightPaintHeatmap() {
       if (!currentCharacterModel || !isWeightPaintActive) return;
-      const targetBoneName = (weightPaintBoneSelect && weightPaintBoneSelect.value) || currentWeightPaintBone;
+      const targetBoneName = (weightPaintBoneSelect && weightPaintBoneSelect.value) || currentWeightPaintBone || '__ALL_BONES__';
       if (!targetBoneName) return;
 
+      const isAllBonesMode = (targetBoneName === '__ALL_BONES__');
       let totalAffectedVerts = 0;
       let globalMaxWeight = 0;
       let totalMeshVerts = 0;
@@ -2005,9 +2023,19 @@
           }
           child.material = child._weightMaterial;
 
-          // Find bone index in this mesh's skeleton
+          // Precompute bone colors for All Bones mode
+          let boneColors = null;
+          if (isAllBonesMode && child.skeleton && child.skeleton.bones) {
+            boneColors = child.skeleton.bones.map((b, idx) => {
+              const hue = ((idx * 137.5077) % 360) / 360;
+              const col = new THREE.Color().setHSL(hue, 0.90, 0.52);
+              return [col.r, col.g, col.b];
+            });
+          }
+
+          // Find bone index in this mesh's skeleton if single-bone mode
           let boneIdx = -1;
-          if (child.skeleton && child.skeleton.bones) {
+          if (!isAllBonesMode && child.skeleton && child.skeleton.bones) {
             boneIdx = child.skeleton.bones.findIndex(b => b && b.name === targetBoneName);
           }
 
@@ -2017,58 +2045,82 @@
           const colorArr = colors.array;
 
           for (let i = 0; i < count; i++) {
-            let w = 0.0;
-            if (boneIdx >= 0) {
-              if (sIdxArr && sWgtArr) {
-                const off = i * itemSize;
-                for (let c = 0; c < itemSize; c++) {
-                  if (Math.round(sIdxArr[off + c]) === boneIdx) {
-                    w += sWgtArr[off + c];
-                  }
+            let r = 0.04, g = 0.06, b = 0.20;
+
+            if (isAllBonesMode && boneColors && sIdxArr && sWgtArr) {
+              // Full skeleton multi-bone weight partition
+              let accumR = 0.0, accumG = 0.0, accumB = 0.0, sumW = 0.0;
+              const off = i * itemSize;
+              for (let c = 0; c < itemSize; c++) {
+                const bIdx = Math.round(sIdxArr[off + c]);
+                const w = sWgtArr[off + c];
+                if (w > 0.001 && boneColors[bIdx]) {
+                  const bc = boneColors[bIdx];
+                  accumR += bc[0] * w;
+                  accumG += bc[1] * w;
+                  accumB += bc[2] * w;
+                  sumW += w;
                 }
-              } else {
-                if (Math.round(skinIndex.getX(i)) === boneIdx) w += skinWeight.getX(i);
-                if (Math.round(skinIndex.getY(i)) === boneIdx) w += skinWeight.getY(i);
-                if (Math.round(skinIndex.getZ(i)) === boneIdx) w += skinWeight.getZ(i);
-                if (Math.round(skinIndex.getW(i)) === boneIdx) w += skinWeight.getW(i);
               }
-            }
-            w = Math.min(1.0, Math.max(0.0, w));
-            if (w > 0.001) {
-              totalAffectedVerts++;
-              if (w > globalMaxWeight) globalMaxWeight = w;
+              if (sumW > 0.001) {
+                totalAffectedVerts++;
+                if (sumW < 0.99 || sumW > 1.01) {
+                  accumR /= sumW;
+                  accumG /= sumW;
+                  accumB /= sumW;
+                }
+                r = accumR;
+                g = accumG;
+                b = accumB;
+              }
+            } else {
+              // Focused Single-Bone Turbo Heatmap
+              let w = 0.0;
+              if (boneIdx >= 0) {
+                if (sIdxArr && sWgtArr) {
+                  const off = i * itemSize;
+                  for (let c = 0; c < itemSize; c++) {
+                    if (Math.round(sIdxArr[off + c]) === boneIdx) {
+                      w += sWgtArr[off + c];
+                    }
+                  }
+                } else {
+                  if (Math.round(skinIndex.getX(i)) === boneIdx) w += skinWeight.getX(i);
+                  if (Math.round(skinIndex.getY(i)) === boneIdx) w += skinWeight.getY(i);
+                  if (Math.round(skinIndex.getZ(i)) === boneIdx) w += skinWeight.getZ(i);
+                  if (Math.round(skinIndex.getW(i)) === boneIdx) w += skinWeight.getW(i);
+                }
+              }
+              w = Math.min(1.0, Math.max(0.0, w));
+              if (w > 0.001) {
+                totalAffectedVerts++;
+                if (w > globalMaxWeight) globalMaxWeight = w;
+
+                // Turbo / Heatmap color gradient:
+                if (w < 0.25) {
+                  const t = w / 0.25;
+                  r = 0.0;
+                  g = t * 0.85;
+                  b = 0.85 + t * 0.15;
+                } else if (w < 0.50) {
+                  const t = (w - 0.25) / 0.25;
+                  r = 0.0;
+                  g = 0.85 + t * 0.15;
+                  b = 1.0 - t;
+                } else if (w < 0.75) {
+                  const t = (w - 0.50) / 0.25;
+                  r = t;
+                  g = 1.0;
+                  b = 0.0;
+                } else {
+                  const t = (w - 0.75) / 0.25;
+                  r = 1.0;
+                  g = 1.0 - t * 0.95;
+                  b = 0.0;
+                }
+              }
             }
 
-            // Turbo / Heatmap color gradient:
-            // 0.0: Dark Navy (0.04, 0.06, 0.20)
-            // 0.0 -> 0.25: Navy -> Cyan
-            // 0.25 -> 0.50: Cyan -> Green
-            // 0.50 -> 0.75: Green -> Yellow
-            // 0.75 -> 1.0: Yellow -> Bright Red
-            let r = 0.04, g = 0.06, b = 0.20;
-            if (w > 0.001) {
-              if (w < 0.25) {
-                const t = w / 0.25;
-                r = 0.0;
-                g = t * 0.85;
-                b = 0.85 + t * 0.15;
-              } else if (w < 0.50) {
-                const t = (w - 0.25) / 0.25;
-                r = 0.0;
-                g = 0.85 + t * 0.15;
-                b = 1.0 - t;
-              } else if (w < 0.75) {
-                const t = (w - 0.50) / 0.25;
-                r = t;
-                g = 1.0;
-                b = 0.0;
-              } else {
-                const t = (w - 0.75) / 0.25;
-                r = 1.0;
-                g = 1.0 - t * 0.95;
-                b = 0.0;
-              }
-            }
             if (colorArr) {
               const i3 = i * 3;
               colorArr[i3] = r;
@@ -2083,8 +2135,12 @@
       });
 
       if (weightPaintStats) {
-        const pct = Math.round(globalMaxWeight * 100);
-        weightPaintStats.textContent = `max ${pct}% · ${totalAffectedVerts.toLocaleString()} v`;
+        if (isAllBonesMode) {
+          weightPaintStats.textContent = `All Bones · ${totalAffectedVerts.toLocaleString()} v`;
+        } else {
+          const pct = Math.round(globalMaxWeight * 100);
+          weightPaintStats.textContent = `max ${pct}% · ${totalAffectedVerts.toLocaleString()} v`;
+        }
       }
 
       updateJointMarkerHighlight();
@@ -2112,6 +2168,10 @@
         toggleWeightPaintBtn.classList.toggle('active', isWeightPaintActive);
         if (weightPaintOptions) weightPaintOptions.style.display = isWeightPaintActive ? 'flex' : 'none';
         if (isWeightPaintActive) {
+          if (!currentWeightPaintBone || currentWeightPaintBone === '__ALL_BONES__') {
+            currentWeightPaintBone = '__ALL_BONES__';
+            if (weightPaintBoneSelect) weightPaintBoneSelect.value = '__ALL_BONES__';
+          }
           buildBoneWeightStatsCache();
           setupWeightPaintSkeleton();
           updateWeightPaintHeatmap();
@@ -2504,19 +2564,21 @@
 
             if (boneNames.length > 0 && weightPaintBoneSelect) {
               weightPaintBoneSelect.innerHTML = '';
-              let defaultIdx = 0;
-              boneNames.forEach((name, i) => {
+
+              // First option: Full skeleton multi-bone weight partition
+              const allOpt = document.createElement('option');
+              allOpt.value = '__ALL_BONES__';
+              allOpt.textContent = '🌟 All Bones (Full Skeleton)';
+              weightPaintBoneSelect.appendChild(allOpt);
+
+              boneNames.forEach(name => {
                 const opt = document.createElement('option');
                 opt.value = name;
                 opt.textContent = name;
                 weightPaintBoneSelect.appendChild(opt);
-                const low = name.toLowerCase();
-                if (defaultIdx === 0 && (low.includes('arm') || low.includes('forearm') || low.includes('spine'))) {
-                  defaultIdx = i;
-                }
               });
-              weightPaintBoneSelect.selectedIndex = defaultIdx;
-              currentWeightPaintBone = boneNames[defaultIdx];
+              weightPaintBoneSelect.selectedIndex = 0;
+              currentWeightPaintBone = '__ALL_BONES__';
             }
 
             buildBoneWeightStatsCache();
@@ -3563,6 +3625,7 @@
         cleanupWeightPaintSkeleton();
         restoreOriginalMaterials();
       }
+      currentWeightPaintBone = '__ALL_BONES__';
       if (toggleWeightPaintBtn) toggleWeightPaintBtn.classList.remove('active');
       if (weightPaintOptions) weightPaintOptions.style.display = 'none';
       if (weightPaintControl) weightPaintControl.style.display = 'none';
