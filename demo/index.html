@@ -729,8 +729,9 @@
       top: 14px;
       right: 14px;
       display: none;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
       z-index: 20;
     }
 
@@ -857,6 +858,10 @@
     .stage-viewport-area.mode-dual .arm-clearance-control {
       order: 2;
       padding: 3px 8px;
+    }
+
+    .stage-viewport-area.mode-dual .btn-rebake-clearance {
+      order: 3;
     }
 
     .stage-viewport-area.mode-dual .viewport-header-left {
@@ -1051,24 +1056,28 @@
     .btn-rebake-clearance {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: linear-gradient(135deg, rgba(59, 211, 208, 0.25), rgba(159, 122, 234, 0.25));
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(59, 211, 208, 0.28), rgba(159, 122, 234, 0.28));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--la-cyan);
       color: #fff;
-      font-size: 0.72rem;
-      font-weight: 600;
+      font-size: 0.73rem;
+      font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 10px rgba(59, 211, 208, 0.2);
       transition: all 0.2s ease;
       white-space: nowrap;
+      pointer-events: auto;
     }
 
     .btn-rebake-clearance:hover:not(:disabled) {
       background: linear-gradient(135deg, var(--la-cyan), var(--la-violet));
       color: #041014;
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(59, 211, 208, 0.4);
+      box-shadow: 0 4px 18px rgba(59, 211, 208, 0.5);
     }
 
     .btn-rebake-clearance:disabled {
@@ -1422,7 +1431,7 @@
               </div>
             </div>
 
-            <!-- Arm & Forearm Clearance Controls & Re-bake Button -->
+            <!-- Arm & Forearm Clearance Controls (Sliders only - stable width) -->
             <div id="armClearanceControl" class="arm-clearance-control">
               <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Arm:</span>
               <input id="armClearanceSlider" type="range" min="-10" max="30" step="1" value="0"
@@ -1457,12 +1466,13 @@
                   class="clearance-num-input clearance-ground-input" title="Type ground elevation offset in cm (-25 to +25)">
                 <span style="font-size:0.7rem;color:var(--la-dim)">cm</span>
               </div>
-
-              <button id="rebakeClearanceBtn" type="button" class="btn-rebake-clearance" style="display:none"
-                title="Bake this arm, forearm & grounding offset into the exported .glb/.fbx model">
-                <span>🔄 Re-bake</span>
-              </button>
             </div>
+
+            <!-- Re-bake Action Button (Positioned below the sliders so it never shifts their position) -->
+            <button id="rebakeClearanceBtn" type="button" class="btn-rebake-clearance" style="display:none"
+              title="Bake this arm, forearm & grounding offset into the exported .glb/.fbx model">
+              <span>🔄 Re-bake</span>
+            </button>
 
             <!-- Clip Selector -->
             <div id="clipControl" class="clip-control">

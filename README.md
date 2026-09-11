@@ -19,9 +19,10 @@ default; set `KIMODO_TEXT_LAYER_CHUNK=1..32` to tune VRAM use.
 
 Included: checked GGUF loading, safetensors conversion, DDIM sampling, C/C++
 APIs, conditioned multi-prompt transitions, CPU/Vulkan parity tests,
-skeleton-only GLB export, and a local text-to-motion demo. General constraint
-input, 77-joint SOMA expansion, skinned-mesh GLB export, and quantised models
-are not implemented yet.
+skeleton-only GLB export, a local text-to-motion demo with dual-viewport
+character studio, and a universal 3D character retargeting engine for baking
+neural motion directly onto custom skinned character meshes. General constraint
+input, 77-joint SOMA expansion, and quantised models are not implemented yet.
 
 ## Build and test on Linux
 
@@ -86,6 +87,32 @@ new generation. Every successful animation also writes a standalone
 node hierarchy (no mesh), ready to copy into a Three.js project. It is also
 available from `/api/animations/<animation-id>/animation.glb` while the demo
 is running.
+
+## Universal 3D Character Retargeting & Skinned-Mesh Export
+
+Kimodo-CPP includes a production-grade Blender retargeting and baking engine
+capable of transferring neural motions directly onto custom skinned 3D characters
+(`.fbx`, `.glb`, `.gltf`) while preserving authentic skeleton hierarchies:
+
+- **Unreal Engine Mannequin (`SK_Mannequin` / UE4 & UE5)**: 100% native preservation (`pelvis`, `spine_01-03`, `clavicle_l`, `upperarm_l`, `thigh_l`, `calf_l`). Drops directly into Unreal animation blueprints.
+- **Reallusion Character Creator (CC3 & CC4)**: Native preservation of `CC_Base_Hip`, `CC_Base_Waist`, and `CC_Base_Spine01-02` with upper thoracic forward flex to prevent arm/torso penetration.
+- **Mixamo & Standard Humanoid**: In-place retargeting for T-Pose and A-Pose meshes with virtual T-pose angular compensation ($Q_{\text{lift}}$).
+- **Autodesk 3ds Max Character Studio Biped**: Automatic centimeter-to-meter normalization and IBM de-skewing with zero ground-shift preservation on standard bipeds (`Ahmed`, `Glow_Idle`, `Trump`).
+- **Custom-Prefixed Rigs**: Prefix-agnostic greedy suffix matching for arbitrary naming conventions (`Hero_`, `Bear_Mama_`).
+
+### Baking via PowerShell or CLI
+
+```powershell
+.\bake_animation.ps1 -Character "Test_Models\Character_Creator\CC3_Base_Plus.Fbx" -Motion "demo-output\<animation-id>" -Output "output_animated.glb"
+```
+
+Or directly through Blender:
+
+```sh
+blender -b -P scripts/bake_to_character.py -- --character <path_to_model> --motion <path_to_motion> --output <output_path>
+```
+
+For comprehensive mathematical formulations, topology rules, and diagnostic guides, see **[docs/RETARGETING_CONSTITUTION.md](docs/RETARGETING_CONSTITUTION.md)**.
 
 ## Weights
 

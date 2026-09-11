@@ -1,6 +1,6 @@
 # The Retargeting Constitution & Technical Reference
 
-> **Core Philosophy**: Never apply ad-hoc rig-specific hacks to the universal mathematical solver. Keep rig-specific format conversions isolated in dedicated pre-processing passes so that verified rigs (Mixamo T-Pose, A-Pose, Bipeds, Character Creator) remain permanently stable.
+> **Core Philosophy**: Never apply ad-hoc rig-specific hacks to the universal mathematical solver. Keep rig-specific format conversions isolated in dedicated pre-processing passes so that verified rigs (Mixamo T-Pose, A-Pose, Bipeds, Character Creator, Unreal Engine Mannequins, and Custom Rigs) remain permanently stable and mutually non-regressive.
 
 ---
 
@@ -12,95 +12,149 @@ The retargeting pipeline transfers SOMA neural motion (`canonical_motion.glb`) o
 flowchart TD
     Input[Input Character Model .fbx / .glb] --> Detect{Rig Architecture Detection}
     
-    Detect -->|3ds Max Biped Bip001| BipedConv[scripts/convert_biped_to_standard.py]
-    BipedConv --> StdGLB[Standardized Intermediate GLB]
+    Detect -->|3ds Max Biped Bip001 / BipName| BipedConv[scripts/convert_biped_to_standard.py]
+    BipedConv --> BipedBranch{Biped Orientation Check}
+    BipedBranch -->|Standard Biped ez <= 0.5 rad| StdNorm[Centimeter Normalization + Zero Ground Shift]
+    BipedBranch -->|Rotated / Kitbashed ez > 0.5 rad| KitbashNorm[Yaw Alignment + Symmetrical Ground Shift]
+    StdNorm --> StdGLB[Standardized Intermediate GLB]
+    KitbashNorm --> StdGLB
     
     Detect -->|Character Creator CC_Base| CCDedicated[Dedicated CC_Base Bone Map]
+    Detect -->|Unreal Engine SK_Mannequin| UEDedicated[Dedicated UE_MANNEQUIN Map]
     Detect -->|Mixamo / Custom Prefix| PrefixAgnostic[Prefix-Agnostic Mixamo Resolver]
     
     StdGLB --> CoreSolver[Core Direct Matrix Solver]
     CCDedicated --> CoreSolver
+    UEDedicated --> CoreSolver
     PrefixAgnostic --> CoreSolver
     
-    CoreSolver --> APoseCheck{A-Pose Rest Test}
+    CoreSolver --> SpineChain[3-Stage Spinal Chain Resolution: Spine1 + Spine2 + Chest]
+    SpineChain --> APoseCheck{A-Pose Rest Test}
     APoseCheck -->|Arms Tilted Down| QLift[Virtual T-Pose Angular Lift Q_lift]
     APoseCheck -->|Arms Horizontal| IdentityLift[Identity Rotation]
     
     QLift --> ProportionalGrounding[Proportional Root Elevation & Height Scaling]
     IdentityLift --> ProportionalGrounding
     
-    ProportionalGrounding --> ExportSanitize[Export Sanitization: 30 FPS Lock + Single Action + Opaque Materials]
-    ExportSanitize --> Output[Animated GLB / FBX]
+    ProportionalGrounding --> ExportSanitize[Export Sanitization: 30 FPS Lock + Single Action + Opaque Materials + Quat Flip Clean]
+    ExportSanitize --> Output[Production Animated GLB / FBX]
 ```
-
-## 2. Rig Preservation vs. Modernization Strategy
-
-Our pipeline follows a strict **Native Rig Preservation** philosophy wherever possible, ensuring baked assets plug seamlessly into their target engines:
-
-| Rig Architecture | Handling Strategy | Engine Compatibility |
-| :--- | :--- | :--- |
-| **Unreal Engine Mannequin** (`SK_Mannequin`) | **100% Native Preservation** (`pelvis`, `thigh_l`, `upperarm_l`) | Drops directly into Unreal Engine 4 & 5 animation blueprints. |
-| **Character Creator** (CC3 / CC4 / Daz) | **100% Native Preservation** (`CC_Base_Hip`, `CC_Base_Waist`) | Native compatibility with Character Creator 4, iClone, and Daz. |
-| **Mixamo & Standard Humanoid** | **100% Native Preservation** (`mixamorig:Hips` or custom prefix) | Instant drop-in for Unity, Blender, and WebGL viewers. |
-| **3ds Max Biped** (`Bip001`, `Bip<Name>`) | **Modernized to Standard Meters** | Converted to standard GLB to fix legacy 2000s centimeter roll bugs. |
 
 ---
 
-## 3. Rig-Specific Constitutions & Rules
+## 2. Rig Preservation vs. Modernization Strategy
 
-### A. Mixamo T-Pose (`Young-Pharaoh`, `Remy`, Standard FBX/GLB)
-- **Bone Convention**: `mixamorig:Hips`, `mixamorig:Spine`, `mixamorig:LeftArm`, `mixamorig:LeftUpLeg`, etc.
-- **Local Axis Layout**: Local $+Y$ points along the bone (longitudinal), $+Z$ is the forward bend normal.
-- **Mapping Hierarchy**:
+Our pipeline follows a strict **Native Rig Preservation** philosophy wherever possible, ensuring baked assets plug seamlessly into their target game engines and DCC suites:
+
+| Rig Architecture | Handling Strategy | Engine Compatibility |
+| :--- | :--- | :--- |
+| **Unreal Engine Mannequin** (`SK_Mannequin` / UE4 & UE5) | **100% Native Preservation** (`pelvis`, `spine_01-03`, `thigh_l`, `upperarm_l`) | Drops directly into Unreal Engine 4 & 5 animation blueprints and IK retargeters. |
+| **Character Creator** (CC3 / CC4 / Daz) | **100% Native Preservation** (`CC_Base_Hip`, `CC_Base_Waist`, `CC_Base_Spine01-02`) | Native compatibility with Character Creator 4, iClone, and Daz Studio. |
+| **Mixamo & Standard Humanoid** | **100% Native Preservation** (`mixamorig:Hips` or custom prefix) | Instant drop-in for Unity Humanoid, Blender, Godot, and WebGL viewers. |
+| **Custom-Prefixed Humanoids** (`Bear_Big`, Asset Packs) | **100% Native Preservation** (`<Prefix>_LeftArm`, `<Prefix>_Spine`) | Preserves original bone hierarchies while matching standardized joint endpoints. |
+| **3ds Max Biped** (`Bip001`, `Bip<Name>`) | **Modernized to Standard Meters** | Converted to standard GLB to fix legacy 2000s centimeter roll & Inverse Bind Matrix bugs. |
+
+---
+
+## 3. Rig-Specific Constitutions & Approaches
+
+### A. Mixamo Standard T-Pose (`Young-Pharaoh`, `Remy`, Standard FBX/GLB)
+- **Bone Convention**: `mixamorig:Hips`, `mixamorig:Spine`, `mixamorig:Spine1`, `mixamorig:Spine2`, `mixamorig:LeftArm`, `mixamorig:LeftUpLeg`, etc.
+- **Local Axis Layout**: Local $+Y$ points along the bone length (longitudinal), $+Z$ is the forward bend normal.
+- **3-Stage Spinal Chain**:
   - `Hips` $\to$ `mixamorig:Hips`
   - `Spine1` $\to$ `mixamorig:Spine` (Lower Lumbar)
-  - `Spine2` $\to$ `mixamorig:Spine1` (Thoracic / Chest)
-  - `LeftLeg` $\to$ `mixamorig:LeftUpLeg`
-  - `LeftShin` $\to$ `mixamorig:LeftLeg`
-  - `LeftFoot` $\to$ `mixamorig:LeftFoot`
-  - `LeftToeBase` $\to$ `mixamorig:LeftToeBase`
-- **Rule**: Do not remap `Spine1` directly to `mixamorig:Spine1` if `mixamorig:Spine` exists, as unmapped lower spine bones remain frozen and cause the hips to buckle backwards.
+  - `Spine2` $\to$ `mixamorig:Spine1` (Mid Thoracic)
+  - `Chest` $\to$ `mixamorig:Spine2` (Upper Thoracic / Clavicle Base)
+- **Critical Topology Rule**:
+  - `mixamorig:LeftShoulder`, `mixamorig:RightShoulder`, and `mixamorig:Neck` attach directly to `mixamorig:Spine2`.
+  - Omitting `Chest` $\to$ `mixamorig:Spine2` leaves the upper chest bone frozen at identity rotation, pulling the shoulders backward by $10\text{--}14\text{cm}$ and causing arms folded across the chest to sink into the torso mesh.
 
 ---
 
 ### B. Mixamo A-Pose (`Bastet-Animated-PBR.glb`)
 - **Problem**: Rest pose arms are angled downward at $\approx 45^\circ - 50^\circ$. Applying SOMA's downward walking/running rotations compounds the angle to $-95^\circ$, causing the arms to cross behind the back and clip through the ribs.
 - **Solution — Virtual T-Pose Lift ($Q_{\text{lift}}$)**:
-  1. Measure the rest arm vector:
+  1. Measure the rest arm vector from shoulder to elbow:
      $$\vec{V}_{\text{left\_rest}} = \text{Elbow}_{\text{pos}} - \text{Shoulder}_{\text{pos}}$$
   2. Compute the rotation quaternion lifting the rest arm to horizontal:
      $$Q_{\text{left\_lift}} = \vec{V}_{\text{left\_rest}} \to (+1, 0, 0)$$
      $$Q_{\text{right\_lift}} = \vec{V}_{\text{right\_rest}} \to (-1, 0, 0)$$
   3. Pre-multiply the rest offset by $Q_{\text{lift}}$:
-     $$M_{\text{offset}} = (M_{\text{src\_rest}} \cdot Q_{\text{lift}})^{-1} \cdot M_{\text{tgt\_rest}}$$
+     $$M_{\text{offset}} = (M_{\text{src\_rest}})^{-1} \cdot (Q_{\text{lift}} \cdot M_{\text{tgt\_rest}})$$
 - **Result**: The motion applies relative to a virtual horizontal T-pose, allowing the arms to swing naturally beside the waist and in front of the chest.
 
 ---
 
-### C. Autodesk 3ds Max Biped (`Glow_Idle.fbx`, `trump_lp_anim_iddle01.fbx`, `Bip001` / `Bip01` / `Bip<Name>`)
+### C. Autodesk 3ds Max Character Studio Biped (`Ahmed`, `Glow_Idle`, `Trump`, `Caterin`, `EMERSO`)
 - **Signature**: Bones starting with `Bip` (e.g. `Bip001 Pelvis`, `Bip01 Pelvis`, `BipTrump Pelvis`, `BipHero Spine`), parented to a $0.01$-scale `Point001` or `<name>_rigCharRoot` Empty.
 - **Problem**: 3ds Max Bipeds use a centimeter coordinate system with $+X$ pointing along the bone length. Exporting directly to glTF invalidates the mesh Inverse Bind Matrices ($IBM$), resulting in mesh stretching between $-120\text{m}$ and $+40\text{m}$.
 - **Solution (`scripts/convert_biped_to_standard.py`)**:
-  1. **Universal Biped Prefix Resolution**: Strips custom prefixes (`BipTrump Pelvis` $\to$ `Bip001 Pelvis` $\to$ `mixamorig:Hips`) to map any custom-named Character Studio biped seamlessly.
-  2. **Centimeter Normalization**: Scale vertex coordinates by $0.01$ ($186\text{cm} \to 1.86\text{m}$) and bake into world coordinates.
+  1. **Universal Biped Prefix Resolution**: Strips custom prefixes (`BipTrump Pelvis` $\to$ `Bip001 Pelvis` $\to$ `mixamorig:Hips`) via `get_biped_mixamo_name()` to handle any custom-named Character Studio biped.
+  2. **Standard vs. Rotated/Kitbashed Biped Branching**:
+     - **Standard 3ds Max Bipeds (`ez <= 0.5 rad`, e.g. `Glow_Idle.fbx`, `Ahmed_Bin_Maged_Character.fbx`, `Trump-LowPoly.fbx`, `Caterin_NEW_Armature.fbx`)**:
+       - `ground_shift = (0, 0, 0)` (**Zero offset — 100% native coordinate preservation**). Prevents floating/detached heads and torn jacket sleeves.
+       - `R_yaw = Identity(4)`.
+       - Vertices scaled by $0.01$ with zero artificial shifts.
+     - **Rotated / Kitbashed Bipeds (`ez > 0.5 rad`, e.g. `EMERSO.fbx`)**:
+       - `R_yaw = Rotation(yaw_corr, 'Z')` to align model facing forward along $-Y$.
+       - `ground_shift` applied symmetrically to **both** skeleton joints and mesh vertices to keep head and body synchronized.
   3. **Standard Basis Transformation**:
      $$\mathbf{R}_{\text{basis}} = \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$
      Maps 3ds Max Biped's $(+X \text{ longitudinal}, +Z \text{ up})$ into standard Mixamo's $(+Y \text{ longitudinal}, +Z \text{ forward})$.
-  4. **Standard Armature Re-Skinning**: Attach vertex groups to a clean `mixamorig` skeleton in true meters.
+  4. **3-Bone Spine Conversion**:
+     - `Bip001 Spine` $\to$ `mixamorig:Spine`
+     - `Bip001 Spine1` $\to$ `mixamorig:Spine1`
+     - `Bip001 Spine2` $\to$ `mixamorig:Spine2`
+  5. **Standard Armature Re-Skinning**: Attaches vertex groups to a clean `mixamorig` skeleton in true meters.
 
 ---
 
-### D. Reallusion Character Creator 3 / 4 (`man3.Fbx`, `CC_Base`)
-- **Signature**: Bones starting with `CC_Base_` (e.g., `CC_Base_Hip`, `CC_Base_Pelvis`, `CC_Base_L_Thigh`).
-- **Critical Topology Rule**:
+### D. Reallusion Character Creator 3 & 4 (`CC3_Base_Plus.Fbx`, `man3.Fbx`, `Neutral_M.Fbx`, `Neutral_F.Fbx`, `Test_toon.Fbx`, `Toon Neutral_M.Fbx`)
+- **Signature**: Bones starting with `CC_Base_` (`CC_Base_Hip`, `CC_Base_Waist`, `CC_Base_Spine01`, `CC_Base_Spine02`, `CC_Base_L_Clavicle`, etc.).
+- **Critical Root Topology Rule**:
   - `CC_Base_Hip` is the **true root joint** (parent of both the spine and the legs via `CC_Base_Pelvis`).
   - SOMA `Hips` **must** map to `CC_Base_Hip`, **NOT** `CC_Base_Pelvis`.
   - Mapping to `CC_Base_Pelvis` leaves the root unrotated, creating a double-offset pelvis tilt that locks the legs in a straight ballerina stance.
-- **Twist Bones**: `CC_Base_L_ThighTwist01`, `CC_Base_L_CalfTwist01`, etc., inherit their transforms from their parent limb bones automatically.
+- **Solution — Dedicated `CC_BASE_MAPPING`**:
+  - `Hips` $\to$ `CC_Base_Hip`
+  - `Spine1` $\to$ `CC_Base_Waist` (lower lumbar)
+  - `Spine2` $\to$ `CC_Base_Spine01` (mid thoracic)
+  - `Chest` $\to$ `CC_Base_Spine02` (upper thoracic; clavicles attach here!)
+  - `Neck1` $\to$ `CC_Base_NeckTwist01`
+  - `Head` $\to$ `CC_Base_Head`
+  - `LeftShoulder` $\to$ `CC_Base_L_Clavicle`
+  - `LeftArm` $\to$ `CC_Base_L_Upperarm`
+  - `LeftForeArm` $\to$ `CC_Base_L_Forearm`
+  - `LeftHand` $\to$ `CC_Base_L_Hand`
+- **Thoracic Forward Flex Rule**:
+  - Clavicles connect to `CC_Base_Spine02`. Driving `CC_Base_Spine02` with SOMA's forward thoracic flexion ensures clavicles and shoulders advance naturally, giving $10\text{--}14\text{cm}$ forward clearance and eliminating arm/forearm penetration into the ribcage/abdomen during folded-arm poses.
+- **Twist Bones**: `CC_Base_L_ThighTwist01`, `CC_Base_L_CalfTwist01`, `CC_Base_L_UpperarmTwist01`, etc., inherit their transforms from their parent limb bones automatically.
 
 ---
 
-### E. Custom-Prefixed Models (`Bear_Big.fbx`, Asset Store Packs)
+### E. Unreal Engine Mannequins (`SK_Mannequin` / UE4 & UE5, `cgtrader_optimized_SKM_XSENS_Mannequin.fbx`)
+- **Signature**: Bones using Unreal conventions (`pelvis`, `spine_01`, `spine_02`, `spine_03`, `clavicle_l`, `upperarm_l`, `lowerarm_l`, `hand_l`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`).
+- **Solution — Dedicated `UE_MANNEQUIN_MAPPING`**:
+  - `Hips` $\to$ `pelvis`
+  - `Spine1` $\to$ `spine_01`
+  - `Spine2` $\to$ `spine_02`
+  - `Chest` $\to$ `spine_03`
+  - `Neck1` $\to$ `neck_01`
+  - `Head` $\to$ `head`
+  - `LeftShoulder` $\to$ `clavicle_l`
+  - `LeftArm` $\to$ `upperarm_l`
+  - `LeftForeArm` $\to$ `lowerarm_l`
+  - `LeftHand` $\to$ `hand_l`
+  - `LeftLeg` $\to$ `thigh_l`
+  - `LeftShin` $\to$ `calf_l`
+  - `LeftFoot` $\to$ `foot_l`
+  - `LeftToeBase` $\to$ `ball_l`
+- **Result**: 100% native preservation. Exports cleanly to GLB/FBX and imports directly into Unreal Engine 4 and 5 without bone remapping or IK rig restructuring.
+
+---
+
+### F. Custom-Prefixed Models (`Bear_Big.fbx`, Asset Store Packs)
 - **Signature**: Standard humanoid hierarchies preceded by arbitrary model namespaces (e.g. `Bear_Mama_LeftUpLeg`, `Character1_RightArm`, `Hero_Spine`).
 - **Solution — Prefix-Agnostic Matching**:
   - The resolver strips any leading namespace (`Bear_Mama_`, `Character1_`, `mixamorig:`) and matches against standardized suffixes (`leftupleg`, `leftleg`, `leftarm`, `rightarm`, etc.).
@@ -108,28 +162,47 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### F. Unreal Engine Mannequins (`SK_Mannequin` / UE4 & UE5, `cgtrader_optimized_SKM_XSENS_Mannequin.fbx`)
-- **Signature**: Bones using Unreal conventions (`pelvis`, `spine_01`, `spine_02`, `clavicle_l`, `upperarm_l`, `lowerarm_l`, `hand_l`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`).
-- **Solution — Dedicated `UE_MANNEQUIN_MAPPING`**:
-  - `Hips` $\to$ `pelvis`
-  - `Spine1` $\to$ `spine_01`
-  - `Spine2` $\to$ `spine_02`
-  - `LeftLeg` $\to$ `thigh_l`
-  - `LeftShin` $\to$ `calf_l`
-  - `LeftFoot` $\to$ `foot_l`
-  - `LeftToeBase` $\to$ `ball_l`
-  - `LeftArm` $\to$ `upperarm_l`
-  - `LeftForeArm` $\to$ `lowerarm_l`
-- **Result**: Native, seamless retargeting onto Unreal Engine 4 and 5 characters.
+## 4. Verified Rig Test Suite & Curated Directory Layout
+
+The repository maintains an organized test model suite under `Test_Models/` categorized by rig architecture:
+
+```text
+Test_Models/
+├── 3dsMax_Biped/
+│   ├── Ahmed_Bin_Maged_Character.fbx    [Verified: Standard Biped, Head & Dagger Intact]
+│   ├── Caterin_NEW_Armature.fbx         [Verified: Standard Biped Armature]
+│   ├── Glow_Idle.fbx                    [Verified: Standard Biped, Zero Torn Sleeves]
+│   └── Trump-LowPoly.fbx                [Verified: Custom Prefix BipTrump, 0 Yaw Flips]
+├── Character_Creator/
+│   ├── CC3_Base_Plus.Fbx                [Verified: Dual-Hip, 3-Bone Spine, Arm Clearance]
+│   ├── man3.Fbx                         [Verified: CC3 Man, Native Preservation]
+│   ├── Neutral_F.Fbx                    [Verified: CC4 Female Base]
+│   ├── Neutral_M.Fbx                    [Verified: CC4 Male Base]
+│   ├── Test_toon.Fbx                    [Verified: CC Stylized Toon]
+│   └── Toon Neutral_M.Fbx               [Verified: CC Toon Male Base]
+├── Mixamo/
+│   ├── Bastet-Animated-PBR.glb          [Verified: A-Pose Q_lift Angular Compensation]
+│   ├── EMERSO_std_interm.glb            [Verified: Kitbashed Biped Converted to Standard]
+│   ├── Remy.fbx                         [Verified: Classic Mixamo Humanoid FBX]
+│   ├── Young-Pharaoh-Animated-PBR.glb   [Verified: Mixamo T-Pose PBR GLB]
+│   ├── Young-Pharaoh-skintokens.fbx     [Verified: Mixamo SkinTokens FBX]
+│   └── Zombie-Pharaoh-Animated-PBR.glb  [Verified: Mixamo Stylized Creature GLB]
+├── Unreal_Mannequin/
+│   ├── SKM_XSENS_Mannequin.fbx          [Verified: UE Mannequin, 22 Native Bones]
+│   └── cgtrader_optimized_...fbx       [Verified: Optimized UE Mannequin]
+└── Custom_Rigs/
+    └── Bear_Big.fbx                     [Verified: Custom Namespace Stripping]
+```
 
 ---
 
-## 3. Mathematical Grounding & Proportions Formula
+## 5. Mathematical Grounding & Proportions Formula
 
 To guarantee that characters with short legs (dwarves, stylized creatures) or long legs (tall humans) remain solidly planted on the floor grid ($Z \approx 0.02\text{m} - 0.04\text{m}$) without floating or sinking:
 
 1. **Leg Length Ratio**:
    $$\text{scale\_ratio} = \frac{H_{\text{tgt\_leg}}}{H_{\text{soma\_leg}}} \quad \text{where } H_{\text{soma\_leg}} = 0.938\text{m}$$
+   Clamped dynamically to safe range $[0.05, 10.0]$.
 2. **Dynamic Root Translation**:
    $$\vec{P}_{\text{world\_hip}} = \begin{bmatrix} X_{\text{rest}} + X_{\text{soma}} \cdot \text{scale\_ratio} \\ Y_{\text{rest}} + Y_{\text{soma}} \cdot \text{scale\_ratio} \\ Z_{\text{rest}} + (Z_{\text{soma}} - H_{\text{soma\_leg}}) \cdot \text{scale\_ratio} \end{bmatrix}$$
 - At rest ($Z_{\text{soma}} = H_{\text{soma\_leg}}$), the character stands at its authentic rest elevation ($Z_{\text{rest}}$).
@@ -137,7 +210,7 @@ To guarantee that characters with short legs (dwarves, stylized creatures) or lo
 
 ---
 
-## 4. WebGL Export & Timeline Sanitization
+## 6. WebGL Export & Timeline Sanitization
 
 1. **Strict 30 FPS Lock**:
    ```python
@@ -150,15 +223,20 @@ To guarantee that characters with short legs (dwarves, stylized creatures) or lo
    - Exactly **1 single clean `"Baked_Animation"` track** is exported.
 3. **Material Alpha Sanitization**:
    - Disconnects alpha node links and sets `blend_method = 'OPAQUE'` to prevent see-through / X-ray sorting artifacts in Three.js and Babylon.js.
+4. **Quaternion Flip Sanitization**:
+   - Ensures consecutive keyframes follow shortest path: if $\mathbf{q}_k \cdot \mathbf{q}_{k-1} < 0$, negate $\mathbf{q}_k = -\mathbf{q}_k$. Eliminates 360° winding pops on joint channels.
 
 ---
 
-## 5. Troubleshooting & Diagnostic Cheatsheet
+## 7. Troubleshooting & Diagnostic Cheatsheet
 
 | Symptom | Probable Cause | Corrective Action |
 | :--- | :--- | :--- |
+| **Arm/forearm penetrating body/torso during folds** | Upper thoracic spine bone (`Spine2` / `Spine02` / `spine_03`) unmapped; shoulder socket swung backward. | Map 3rd spine bone to `Chest` so thoracic forward flex is applied. |
 | **Character floating above floor grid** | Absolute root height applied without subtracting $H_{\text{soma\_leg}}$. | Use $\Delta Z = (Z_{\text{soma}} - H_{\text{soma\_leg}}) \cdot \text{scale\_ratio}$. |
 | **Hips buckled backward, knees locked straight** | Lower spine joint (`mixamorig:Spine` or `CC_Base_Waist`) unmapped and frozen at rest. | Verify `Spine1` maps to the lowest spine bone above the hips. |
+| **Head detached from body / torn jacket sleeves on Biped** | Artificial grounding shift applied to bones while mesh remained at rest. | In `convert_biped_to_standard.py`, keep `ground_shift = (0,0,0)` for standard bipeds. |
+| **Character rotates 90° sideways during animation** | Biped rest pose yaw offset improperly compensated. | Check Euler $Z$ rotation; apply $R_{\text{yaw}}$ only on rotated kitbashed bipeds. |
 | **Hands crossing behind back (A-Pose)** | Downward walking motion compounding A-pose rest tilt. | Verify $Q_{\text{lift}}$ is active and rotating rest arm vector to horizontal. |
 | **Mesh explodes / Spikes / Stretched underground** | FBX parent scale hierarchy desyncing Inverse Bind Matrices on glTF export. | Route model through `scripts/convert_biped_to_standard.py`. |
 | **Animation plays in fast-forward (e.g. 1.98s)** | FBX scene metadata altered Blender's `scene.render.fps`. | Verify `render.fps = 30` lock is executed after importing target. |
