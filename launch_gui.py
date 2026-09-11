@@ -516,8 +516,9 @@ def worker_loop():
                 item["error"] = res.stderr or "Generation failed"
             else:
                 print(f"[Worker] Process completed successfully in {time.time() - t_start:.2f}s")
-                build_animation_glb(item_dir)
-                item["status"] = "complete"
+                export_skeleton_glb(item_dir, model_info["skeleton_key"])
+                item["status"] = "ready"
+                item["progress"] = ""
                 item["duration"] = round(time.time() - t_start, 2)
                 item["files"] = {
                     "root": f"/api/animations/{item['id']}/root.f32",
