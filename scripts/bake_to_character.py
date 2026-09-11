@@ -16,19 +16,19 @@ import re
 
 BONE_CANDIDATES = {
     "Hips": [
-        "hip", "hips", "pelvis", "bip001pelvis", "bip01pelvis", "root"
+        "hip", "hips", "pelvis", "bip001pelvis", "bip01pelvis", "waist", "skl_root", "root_motion"
     ],
     "Spine1": [
-        "waist", "spine1", "spine01", "spine", "bip001spine", "bip01spine", "lower_spine"
+        "spine", "spine1", "spine_01", "spine01", "spine_1", "bip001spine", "bip01spine", "lower_spine", "waist"
     ],
     "Spine2": [
-        "spine2", "spine02", "spine1", "bip001spine1", "bip01spine1", "mid_spine"
+        "spine1", "spine2", "spine_02", "spine02", "spine_2", "bip001spine1", "bip01spine1", "mid_spine"
     ],
     "Chest": [
-        "chest", "spine3", "spine03", "spine2", "bip001spine2", "bip01spine2", "upper_spine"
+        "chest", "spine3", "spine_03", "spine03", "spine2", "bust_1", "bust1", "bip001spine2", "bip01spine2", "upper_spine"
     ],
     "Neck1": [
-        "necktwist01", "neck1", "neck", "bip001neck", "bip01neck", "neck_01"
+        "necktwist01", "neck1", "neck", "neck_01", "bip001neck", "bip01neck"
     ],
     "Head": [
         "head", "bip001head", "bip01head"
@@ -37,46 +37,46 @@ BONE_CANDIDATES = {
         "leftshoulder", "leftclavicle", "l_clavicle", "lclavicle", "bip001lclavicle", "bip01lclavicle", "clavicle_l", "claviclel", "clavicle.l", "l_shoulder"
     ],
     "LeftArm": [
-        "leftarm", "leftupperarm", "leftshoulder_arm", "l_upperarm", "lupperarm", "bip001lupperarm", "bip01lupperarm", "upperarm_l", "upperarml", "arm_l", "arml", "upper_arm.l", "l_arm"
+        "leftarm", "leftupperarm", "leftshoulder_arm", "l_upperarm", "lupperarm", "bip001lupperarm", "bip01lupperarm", "upperarm_l", "upperarml", "arm_l", "arml", "upper_arm.l", "l_arm", "arm_1_l", "arm1_l"
     ],
     "LeftForeArm": [
-        "leftforearm", "leftlowerarm", "l_forearm", "lforearm", "bip001lforearm", "bip01lforearm", "forearm_l", "forearml", "lowerarm_l", "lowerarml", "forearm.l", "l_fore_arm"
+        "leftforearm", "leftlowerarm", "l_forearm", "lforearm", "bip001lforearm", "bip01lforearm", "forearm_l", "forearml", "lowerarm_l", "lowerarml", "forearm.l", "l_fore_arm", "arm_2_l", "arm2_l"
     ],
     "LeftHand": [
-        "lefthand", "leftwrist", "l_hand", "lhand", "bip001lhand", "bip01lhand", "hand_l", "handl", "hand.l"
+        "lefthand", "leftwrist", "l_hand", "lhand", "bip001lhand", "bip01lhand", "hand_l", "handl", "hand.l", "wrist_l", "wristl"
     ],
     "RightShoulder": [
         "rightshoulder", "rightclavicle", "r_clavicle", "rclavicle", "bip001rclavicle", "bip01rclavicle", "clavicle_r", "clavicler", "clavicle.r", "r_shoulder"
     ],
     "RightArm": [
-        "rightarm", "rightupperarm", "rightshoulder_arm", "r_upperarm", "rupperarm", "bip001rupperarm", "bip01rupperarm", "upperarm_r", "upperarmr", "arm_r", "armr", "upper_arm.r", "r_arm"
+        "rightarm", "rightupperarm", "rightshoulder_arm", "r_upperarm", "rupperarm", "bip001rupperarm", "bip01rupperarm", "upperarm_r", "upperarmr", "arm_r", "armr", "upper_arm.r", "r_arm", "arm_1_r", "arm1_r"
     ],
     "RightForeArm": [
-        "rightforearm", "rightlowerarm", "r_forearm", "rforearm", "bip001rforearm", "bip01rforearm", "forearm_r", "forearmr", "lowerarm_r", "lowerarmr", "forearm.r", "r_fore_arm"
+        "rightforearm", "rightlowerarm", "r_forearm", "rforearm", "bip001rforearm", "bip01rforearm", "forearm_r", "forearmr", "lowerarm_r", "lowerarmr", "forearm.r", "r_fore_arm", "arm_2_r", "arm2_r"
     ],
     "RightHand": [
-        "righthand", "rightwrist", "r_hand", "rhand", "bip001rhand", "bip01rhand", "hand_r", "handr", "hand.r"
+        "righthand", "rightwrist", "r_hand", "rhand", "bip001rhand", "bip01rhand", "hand_r", "handr", "hand.r", "wrist_r", "wristr"
     ],
     "LeftLeg": [
-        "leftupleg", "leftupperleg", "leftthigh", "l_thigh", "lthigh", "thigh_l", "thighl", "thigh.l", "bip001lthigh", "bip01lthigh", "l_leg", "leftleg"
+        "leftupleg", "leftupperleg", "leftthigh", "l_thigh", "lthigh", "thigh_l", "thighl", "thigh.l", "bip001lthigh", "bip01lthigh", "l_leg", "leftleg", "leg_1_l", "leg1_l"
     ],
     "LeftShin": [
-        "leftshin", "leftcalf", "leftlowerleg", "l_calf", "lcalf", "calf_l", "calfl", "shin_l", "shinl", "shin.l", "bip001lcalf", "bip01lcalf", "l_shin", "leftleg", "leg_l"
+        "leftshin", "leftcalf", "leftlowerleg", "l_calf", "lcalf", "calf_l", "calfl", "shin_l", "shinl", "shin.l", "bip001lcalf", "bip01lcalf", "l_shin", "leftleg", "leg_l", "leg_2_l", "leg2_l"
     ],
     "LeftFoot": [
-        "leftfoot", "l_foot", "lfoot", "bip001lfoot", "bip01lfoot", "foot_l", "footl", "foot.l"
+        "leftfoot", "l_foot", "lfoot", "bip001lfoot", "bip01lfoot", "foot_l", "footl", "foot.l", "ankle_l", "anklel"
     ],
     "LeftToeBase": [
         "lefttoebase", "l_toebase", "ltoebase", "lefttoe", "l_toe0", "ltoe0", "l_toe", "ltoe", "bip001ltoe0", "bip01ltoe0", "bip001ltoe", "bip01ltoe", "toe_l", "toel", "toe.l", "ball_l"
     ],
     "RightLeg": [
-        "rightupleg", "rightupperleg", "rightthigh", "r_thigh", "rthigh", "thigh_r", "thighr", "thigh.r", "bip001rthigh", "bip01rthigh", "r_leg", "rightleg"
+        "rightupleg", "rightupperleg", "rightthigh", "r_thigh", "rthigh", "thigh_r", "thighr", "thigh.r", "bip001rthigh", "bip01rthigh", "r_leg", "rightleg", "leg_1_r", "leg1_r"
     ],
     "RightShin": [
-        "rightshin", "rightcalf", "rightlowerleg", "r_calf", "rcalf", "calf_r", "calfr", "shin_r", "shinr", "shin.r", "bip001rcalf", "bip01rcalf", "r_shin", "rightleg", "leg_r"
+        "rightshin", "rightcalf", "rightlowerleg", "r_calf", "rcalf", "calf_r", "calfr", "shin_r", "shinr", "shin.r", "bip001rcalf", "bip01rcalf", "r_shin", "rightleg", "leg_r", "leg_2_r", "leg2_r"
     ],
     "RightFoot": [
-        "rightfoot", "r_foot", "rfoot", "bip001rfoot", "bip01rfoot", "foot_r", "footr", "foot.r"
+        "rightfoot", "r_foot", "rfoot", "bip001rfoot", "bip01rfoot", "foot_r", "footr", "foot.r", "ankle_r", "ankler"
     ],
     "RightToeBase": [
         "righttoebase", "r_toebase", "rtoebase", "righttoe", "r_toe0", "rtoe0", "r_toe", "rtoe", "bip001rtoe0", "bip01rtoe0", "bip001rtoe", "bip01rtoe", "toe_r", "toer", "toe.r", "ball_r"
@@ -84,7 +84,8 @@ BONE_CANDIDATES = {
 }
 
 def normalize_name(name):
-    return re.sub(r'[^a-z0-9]', '', name.lower().replace('mixamorig', ''))
+    clean = re.sub(r'_\d+$', '', name.lower().replace('mixamorig', '').replace('mixamorig:', ''))
+    return re.sub(r'[^a-z0-9]', '', clean)
 
 def parse_args():
     argv = sys.argv
@@ -98,6 +99,7 @@ def parse_args():
     output_path = None
     arm_clearance = 0.0
     forearm_clearance = 0.0
+    grounding_offset = 0.0
     
     for i in range(len(argv)):
         if argv[i] in ("-c", "--character") and i + 1 < len(argv):
@@ -116,8 +118,13 @@ def parse_args():
                 forearm_clearance = float(argv[i + 1])
             except ValueError:
                 forearm_clearance = 0.0
+        elif argv[i] in ("--grounding-offset",) and i + 1 < len(argv):
+            try:
+                grounding_offset = float(argv[i + 1])
+            except ValueError:
+                grounding_offset = 0.0
             
-    return char_path, motion_path, output_path, arm_clearance, forearm_clearance
+    return char_path, motion_path, output_path, arm_clearance, forearm_clearance, grounding_offset
 
 def clear_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -129,7 +136,7 @@ def find_armature(exclude=None):
     return None
 
 def main():
-    char_path, motion_path, output_path, arm_clearance, forearm_clearance = parse_args()
+    char_path, motion_path, output_path, arm_clearance, forearm_clearance, grounding_offset = parse_args()
     if not char_path or not motion_path:
         print("Usage: blender -b -P scripts/bake_to_character.py -- --character <char.fbx/glb> --motion <kimodo_clip_dir_or_glb> [--output <output.glb>]")
         sys.exit(1)
@@ -197,12 +204,15 @@ def main():
         sys.exit(1)
 
     char_objs = [o for o in bpy.data.objects if o not in all_before]
-
-    tgt_arm = find_armature(exclude=src_arm)
-    if not tgt_arm:
+    char_armatures = [o for o in char_objs if o.type == 'ARMATURE' and o != src_arm]
+    if not char_armatures:
         print("Error: Could not find armature in target character.")
         sys.exit(1)
+    tgt_arm = max(char_armatures, key=lambda a: len(a.data.bones))
     tgt_arm.name = "Target_Armature"
+    secondary_armatures = [a for a in char_armatures if a != tgt_arm]
+    if secondary_armatures:
+        print(f"[Retarget] Found {len(secondary_armatures)} secondary accessory/hair armature(s): {[a.name for a in secondary_armatures]}")
 
     # Enforce standard 30 FPS animation timeline regardless of any custom FBX frame rate metadata
     bpy.context.scene.render.fps = 30
@@ -308,26 +318,56 @@ def main():
     bone_map = {}
     tgt_bone_names = [b.name for b in tgt_arm.data.bones]
     is_cc_base = any('cc_base' in b.name.lower() for b in tgt_arm.data.bones)
-    is_ue_mannequin = any(b.name.lower() in ('thigh_l', 'upperarm_l', 'lowerarm_l') for b in tgt_arm.data.bones)
+    is_ue_mannequin = any(b.name.lower() in ('thigh_l', 'upperarm_l', 'lowerarm_l') or
+                          re.sub(r'_\d+$', '', b.name.lower()) in ('thigh_l', 'upperarm_l', 'lowerarm_l')
+                          for b in tgt_arm.data.bones)
 
     if is_cc_base:
         target_map = CC_BASE_MAPPING
         for s_name, t_target in target_map.items():
             if s_name not in src_arm.data.bones:
                 continue
+            t_low = t_target.lower()
+            matched = None
             for tb in tgt_bone_names:
-                if tb.lower() == t_target.lower():
-                    bone_map[s_name] = tb
+                if tb in bone_map.values():
+                    continue
+                if tb.lower() == t_low:
+                    matched = tb
                     break
+            if not matched:
+                for tb in tgt_bone_names:
+                    if tb in bone_map.values():
+                        continue
+                    if re.sub(r'_\d+$', '', tb.lower()) == t_low:
+                        matched = tb
+                        break
+            if matched:
+                bone_map[s_name] = matched
     elif is_ue_mannequin:
         target_map = UE_MANNEQUIN_MAPPING
         for s_name, t_target in target_map.items():
             if s_name not in src_arm.data.bones:
                 continue
+            t_low = t_target.lower()
+            matched = None
+            # 1. Exact match first (guarantees clean Unreal models are 100% untouched)
             for tb in tgt_bone_names:
-                if tb.lower() == t_target.lower():
-                    bone_map[s_name] = tb
+                if tb in bone_map.values():
+                    continue
+                if tb.lower() == t_low:
+                    matched = tb
                     break
+            # 2. Suffix-tolerant match (e.g. Sketchfab/GLTF indexed nodes like thigh_l_77 -> thigh_l)
+            if not matched:
+                for tb in tgt_bone_names:
+                    if tb in bone_map.values():
+                        continue
+                    if re.sub(r'_\d+$', '', tb.lower()) == t_low:
+                        matched = tb
+                        break
+            if matched:
+                bone_map[s_name] = matched
     else:
         target_map = MIXAMO_MAPPING
         for s_name, def_t_name in target_map.items():
@@ -350,7 +390,16 @@ def main():
                     if tb.lower().endswith(f"_{raw_name.lower()}") or tb.lower().endswith(raw_name.lower()):
                         matched = tb
                         break
-            # 3. Fallback to candidate patterns for Rigify and custom humanoid rigs (e.g., upper_arm.L, forearm.L)
+            # 3. Suffix-tolerant match (stripping trailing node index suffixes like Hips_50 -> Hips)
+            if not matched:
+                for tb in tgt_bone_names:
+                    if tb in bone_map.values():
+                        continue
+                    tb_stripped = re.sub(r'_\d+$', '', tb.lower())
+                    if tb_stripped in (def_t_name.lower(), raw_name.lower(), s_name.lower()) or tb_stripped.endswith(f"_{raw_name.lower()}"):
+                        matched = tb
+                        break
+            # 4. Fallback to candidate patterns for Rigify and custom humanoid rigs (e.g., upper_arm.L, forearm.L)
             if not matched and s_name in BONE_CANDIDATES:
                 for cand in BONE_CANDIDATES[s_name]:
                     for tb in tgt_bone_names:
@@ -369,6 +418,19 @@ def main():
     print(f"[Retarget] Resolved {len(bone_map)} bones from SOMA to Target Armature ({tgt_arm.name}).")
     for s_b, t_b in bone_map.items():
         print(f"   • {s_b:14s} -> {t_b}")
+
+    # 2.9 Auto-link secondary accessory / hair armatures to head bone so they move with character
+    head_t_name = bone_map.get('Head')
+    if head_t_name and head_t_name in tgt_arm.data.bones and secondary_armatures:
+        for sec_arm in secondary_armatures:
+            if not sec_arm.parent or sec_arm.parent.type != 'ARMATURE':
+                w_before = sec_arm.matrix_world.copy()
+                sec_arm.parent = tgt_arm
+                sec_arm.parent_type = 'BONE'
+                sec_arm.parent_bone = head_t_name
+                sec_arm.matrix_world = w_before
+                bpy.context.view_layer.update()
+                print(f"[Retarget] Linked secondary armature '{sec_arm.name}' to head bone '{head_t_name}'")
 
     # 3. Compute static rest offsets & proportions in REST pose
     src_arm.data.pose_position = 'REST'
@@ -419,6 +481,8 @@ def main():
                 R_clear_fa_l = mathutils.Matrix.Rotation(math.radians(forearm_clearance), 3, fwd)
                 R_clear_fa_r = mathutils.Matrix.Rotation(-math.radians(forearm_clearance), 3, fwd)
             print(f"[Retarget] Custom arm clearance: {arm_clearance:+.1f}°, forearm: {forearm_clearance:+.1f}° around forward vector {fwd.to_tuple(3)}")
+    if abs(grounding_offset) > 0.0001:
+        print(f"[Retarget] Custom grounding offset: {grounding_offset*100:+.1f}cm")
 
     for s_name, t_name in bone_map.items():
         pb_s = src_arm.pose.bones.get(s_name)
@@ -435,7 +499,12 @@ def main():
                 
             m_offsets[s_name] = s_rot.inverted() @ t_rot
 
-    # Leg heights & root scale ratio
+    # 4. Switch back to POSE mode & create clean Target Action
+    src_arm.data.pose_position = 'POSE'
+    tgt_arm.data.pose_position = 'POSE'
+    bpy.context.view_layer.update()
+
+    # Leg heights & root scale ratio (evaluated in POSE mode to capture true rest pose world translations)
     s_foot_b = src_arm.data.bones.get('LeftFoot') or src_arm.data.bones.get('RightFoot')
     s_leg_height = abs(src_arm.data.bones['Hips'].head_local.z - s_foot_b.head_local.z) if (s_foot_b and 'Hips' in src_arm.data.bones) else 0.938
     
@@ -458,11 +527,6 @@ def main():
     scale_ratio = t_leg_height / s_leg_height if s_leg_height > 0.05 else 1.0
     scale_ratio = max(0.05, min(10.0, scale_ratio))
     print(f"[Proportions] SOMA leg={s_leg_height:.3f}m -> Target leg={t_leg_height:.3f}m (Scale Ratio: {scale_ratio:.3f})")
-
-    # 4. Switch back to POSE mode & create clean Target Action
-    src_arm.data.pose_position = 'POSE'
-    tgt_arm.data.pose_position = 'POSE'
-    bpy.context.view_layer.update()
 
     src_act = src_arm.animation_data.action if src_arm.animation_data else None
     for a in list(bpy.data.actions):
@@ -518,10 +582,14 @@ def main():
             t_world_hip = mathutils.Vector((
                 t_rest_hip_pos.x + s_hip_curr_pos.x * scale_ratio,
                 t_rest_hip_pos.y + s_hip_curr_pos.y * scale_ratio,
-                s_hip_curr_pos.z * scale_ratio
+                s_hip_curr_pos.z * scale_ratio + grounding_offset
             ))
         else:
-            t_world_hip = t_rest_hip_pos
+            t_world_hip = mathutils.Vector((
+                t_rest_hip_pos.x,
+                t_rest_hip_pos.y,
+                t_rest_hip_pos.z + grounding_offset
+            ))
 
         for s_name, t_name in ordered_bones:
             pb_s = src_arm.pose.bones.get(s_name)

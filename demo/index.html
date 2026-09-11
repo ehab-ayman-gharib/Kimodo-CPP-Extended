@@ -44,7 +44,7 @@
       width: 100vw;
       height: 100vh;
       display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
+      grid-template-columns: 440px minmax(0, 1fr);
     }
 
     .sidebar {
@@ -416,6 +416,232 @@
       box-shadow: 0 2px 8px rgba(59, 211, 208, 0.25);
     }
 
+    /* AI Models Header Status Pill & Popover HUD */
+    .ai-models-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 14px;
+      background: rgba(10, 16, 23, 0.9);
+      border: 1px solid rgba(59, 211, 208, 0.32);
+      border-radius: 20px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 50;
+    }
+    .ai-models-pill:hover {
+      background: rgba(15, 24, 34, 0.98);
+      border-color: var(--la-cyan);
+      box-shadow: 0 4px 18px rgba(59, 211, 208, 0.22);
+    }
+    .ai-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 700;
+      color: #f2f5fb;
+      letter-spacing: 0.2px;
+    }
+    .ai-pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    .ai-pill-dot.ok {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+    .ai-pill-dot.warn {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .ai-pill-dot.pulse {
+      animation: aiDotPulse 1.5s infinite;
+    }
+    @keyframes aiDotPulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+    .ai-pill-divider {
+      color: rgba(255, 255, 255, 0.2);
+      font-weight: 300;
+      font-size: 0.8rem;
+      margin: 0 1px;
+    }
+    .ai-pill-models {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--la-muted);
+      font-weight: 500;
+      font-size: 0.74rem;
+    }
+    .ai-model-tag {
+      color: #94a3b8;
+      transition: color 0.15s;
+    }
+    .ai-models-pill:hover .ai-model-tag {
+      color: #cbd5e1;
+    }
+    .ai-model-dot {
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 0.6rem;
+    }
+    .ai-pill-dl-btn {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #080d13;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.15s;
+    }
+    .ai-pill-dl-btn:hover {
+      transform: scale(1.04);
+    }
+    .ai-pill-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-pill-progress-bar-bg {
+      width: 70px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .ai-pill-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--la-cyan), var(--la-violet));
+      transition: width 0.3s ease;
+    }
+    .ai-pill-chevron {
+      color: var(--la-muted);
+      font-size: 0.65rem;
+      margin-left: 2px;
+      transition: transform 0.2s;
+    }
+    .ai-models-pill.open .ai-pill-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Popover HUD */
+    .ai-models-popover {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 390px;
+      background: rgba(12, 18, 26, 0.97);
+      border: 1px solid var(--la-line);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(59, 211, 208, 0.15);
+      border-radius: 12px;
+      padding: 14px 16px;
+      z-index: 1000;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: popoverFadeIn 0.18s ease-out;
+      cursor: default;
+    }
+    @keyframes popoverFadeIn {
+      from { opacity: 0; transform: translate(-50%, -6px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .popover-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f2f5fb;
+    }
+    .popover-close {
+      cursor: pointer;
+      font-size: 1.15rem;
+      color: var(--la-muted);
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .popover-close:hover {
+      color: #fff;
+    }
+    .popover-body {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .popover-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .popover-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+    .popover-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .popover-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .popover-desc {
+      font-size: 0.69rem;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .popover-status {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+    .popover-status.ready {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .popover-status.missing {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .popover-status.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
     .stage-viewport-area {
       flex: 1;
       display: grid;
@@ -511,7 +737,7 @@
     .arm-clearance-control {
       display: none;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       background: rgba(13, 18, 24, 0.92);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -520,6 +746,34 @@
       border-radius: 6px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
       pointer-events: auto;
+    }
+
+    .clearance-num-input {
+      width: 32px;
+      height: 18px;
+      background: #080c10;
+      color: #f2f5fb;
+      border: 1px solid var(--la-line);
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      text-align: center;
+      padding: 0 1px;
+      outline: none;
+      transition: border-color 0.15s ease;
+      -moz-appearance: textfield;
+    }
+    .clearance-num-input::-webkit-outer-spin-button,
+    .clearance-num-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .clearance-num-input:focus {
+      border-color: var(--la-cyan);
+      box-shadow: 0 0 4px rgba(59, 211, 208, 0.35);
+    }
+    .clearance-ground-input {
+      width: 38px;
     }
 
     .clip-control {
@@ -891,6 +1145,41 @@
         </div>
       </header>
 
+      <!-- Automated First-Time Model Setup Banner -->
+      <div id="modelSetupBanner" style="display:none;flex-direction:column;gap:10px;background:linear-gradient(135deg,rgba(56,189,248,0.12),rgba(147,51,234,0.12));border:1px solid rgba(56,189,248,0.4);border-radius:10px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex:1;min-width:200px">
+            <span style="font-size:1.3rem;line-height:1">⚡</span>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="font-weight:700;font-size:0.85rem;color:#f2f5fb">
+                First-Time Setup: AI Models Required
+              </div>
+              <div id="modelSetupDetails" style="font-size:0.75rem;color:#cbd5e1;line-height:1.35">
+                Essential weights are missing: <b id="modelMissingList" style="color:var(--la-cyan)">Checking...</b>
+              </div>
+            </div>
+          </div>
+          <button id="startDownloadBtn" type="button" class="btn-violet" style="background:linear-gradient(135deg,#38bdf8,#818cf8);color:#080d13;font-weight:700;border:none;border-radius:7px;padding:6px 12px;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(56,189,248,0.35);white-space:nowrap">
+            <span>📥</span> Download Models (~1.8 GB)
+          </button>
+        </div>
+
+        <!-- Progress Bar (Visible while downloading) -->
+        <div id="modelDownloadProgressContainer" style="display:none;flex-direction:column;gap:6px;background:rgba(0,0,0,0.25);padding:8px 10px;border-radius:7px;border:1px solid rgba(255,255,255,0.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.74rem">
+            <span id="modelDownloadStatusText" style="color:var(--la-cyan);font-weight:600">Initializing download...</span>
+            <span id="modelDownloadPctText" style="color:#f2f5fb;font-family:monospace;font-weight:700">0%</span>
+          </div>
+          <div style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden">
+            <div id="modelDownloadProgressBar" style="width:5%;height:100%;background:linear-gradient(90deg,var(--la-cyan),var(--la-violet));transition:width 0.3s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#94a3b8">
+            <span>Powered by HuggingFace Hub (Direct GGUF)</span>
+            <span id="modelDownloadStep">Connecting...</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Generation Box -->
       <section class="card promptbox">
         <label for="prompt">Describe a motion</label>
@@ -903,38 +1192,64 @@
       <!-- Custom Character Baker -->
       <section class="card promptbox" style="gap:10px">
         <div class="eyebrow" style="color:var(--la-cyan-2);margin-bottom:0">Character Retargeting & Rig Baker</div>
+
+        <!-- Blender Engine Status Bar -->
+        <div id="blenderStatusBar" style="display:flex;align-items:center;justify-content:space-between;background:#0c131a;border:1px solid var(--la-line);border-radius:7px;padding:6px 10px;font-size:0.75rem;gap:8px">
+          <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1">
+            <span id="blenderDot" style="font-size:0.75rem;line-height:1;flex-shrink:0">🟢</span>
+            <div style="display:flex;flex-direction:column;min-width:0;line-height:1.2">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span id="blenderTitleText" style="font-weight:700;color:#f2f5fb">Blender</span>
+                <span id="blenderBadge" style="font-size:0.65rem;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#4ade80;font-weight:600">Auto</span>
+              </div>
+              <span id="blenderPathDisplay" style="display:inline-block;color:#7e8b9b;font-family:monospace;font-size:0.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px" title="Blender Executable Path">Detecting...</span>
+            </div>
+          </div>
+          <button id="blenderRelocateBtn" type="button" title="Configure or change Blender path" style="flex-shrink:0;padding:4px 9px;font-size:0.72rem;background:#182530;color:var(--la-cyan);border:1px solid var(--la-line);border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap">
+            📂 Relocate
+          </button>
+        </div>
+
         <label style="font-weight:700;font-size:0.92rem;color:var(--la-text)">Bake to 3D Character Mesh</label>
         <div class="hint" style="margin-bottom:2px">Upload your character model (.fbx or .glb) to bake the active motion
           directly onto its rig:</div>
 
-        <input type="file" id="charFile" accept=".fbx,.glb,.gltf" style="font-size:0.82rem;padding:6px;cursor:pointer">
+        <input type="file" id="charFile" accept=".fbx,.glb,.gltf" style="font-size:0.82rem;padding:6px;cursor:pointer;width:100%;max-width:100%;box-sizing:border-box">
 
         <!-- Auto-Rig Section (Dynamically displayed when an unrigged 3D mesh is detected) -->
-        <div id="autoRigContainer" style="display:none;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(251,176,52,0.12),rgba(224,133,20,0.05));border:1px solid rgba(251,176,52,0.35);border-radius:9px;padding:10px 12px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
+        <div id="autoRigContainer" style="display:none;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(251,176,52,0.12),rgba(224,133,20,0.05));border:1px solid rgba(251,176,52,0.35);border-radius:9px;padding:10px 12px;width:100%;max-width:100%;box-sizing:border-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
             <span style="font-size:0.83rem;font-weight:700;color:#fbb034;display:inline-flex;align-items:center;gap:5px">
               ⚠️ Unrigged 3D Mesh Detected
             </span>
-            <label style="font-size:0.75rem;color:var(--la-text);display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none" title="Toggle Vulkan GPU Acceleration for Neural Rigging">
-              <input type="checkbox" id="autoRigGpuCheck" checked style="cursor:pointer;accent-color:var(--la-cyan)">
-              <span style="font-weight:600">Vulkan GPU</span>
-            </label>
+            <div style="display:inline-flex;align-items:center;gap:10px">
+              <label style="font-size:0.75rem;color:var(--la-text);display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none" title="Toggle Vulkan GPU Acceleration for Neural Rigging">
+                <input type="checkbox" id="autoRigGpuCheck" checked style="cursor:pointer;accent-color:var(--la-cyan)">
+                <span style="font-weight:600">Vulkan GPU</span>
+              </label>
+              <select id="autoRigBeamsSelect" title="Autoregressive Search Beams: Fast (1) for ~1m speed on clean humanoids, High Precision (5) for maximum anatomical accuracy" style="background:#0e1520;color:#f2f5fb;border:1px solid rgba(251,176,52,0.45);border-radius:6px;padding:3px 6px;font-size:0.73rem;font-weight:600;cursor:pointer;outline:none">
+                <option value="1">⚡ Fast (1 Beam ~1m)</option>
+                <option value="2">⚖️ Balanced (2 Beams)</option>
+                <option value="5" selected>🎯 High Precision (5 Beams)</option>
+                <option value="10">🔬 Maximum (10 Beams)</option>
+              </select>
+            </div>
           </div>
           <div style="font-size:0.76rem;color:#b8c3d3;line-height:1.35">
             This mesh has no skeleton. Auto-rig it with SkinTokens to predict skinning weights & convert to standard Mixamo bones:
           </div>
-          <button id="autoRigBtn" type="button" class="btn-violet" style="background:linear-gradient(135deg,#fbb034,#e08514);color:#080d13;font-weight:700;border:none;box-shadow:0 3px 14px rgba(251,176,52,0.4);padding:8px 14px;font-size:0.84rem;cursor:pointer;border-radius:7px;display:flex;align-items:center;justify-content:center;gap:6px">
+          <button id="autoRigBtn" type="button" class="btn-violet" style="background:linear-gradient(135deg,#fbb034,#e08514);color:#080d13;font-weight:700;border:none;box-shadow:0 3px 14px rgba(251,176,52,0.4);padding:8px 14px;font-size:0.84rem;cursor:pointer;border-radius:7px;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;box-sizing:border-box">
             ⚡ Auto-Rig with SkinTokens
           </button>
         </div>
 
-        <div id="bakeControlsRow" style="display:flex;gap:8px">
+        <div id="bakeControlsRow" style="display:flex;gap:8px;width:100%;max-width:100%;box-sizing:border-box">
           <select id="charFormat"
-            style="flex:1;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem">
+            style="flex:1 1 0;min-width:0;background:#0b1015;color:#f2f5fb;border:1px solid var(--la-line);border-radius:8px;padding:6px 8px;font-size:0.82rem;box-sizing:border-box">
             <option value="glb">Standard GLB (glTF 2.0)</option>
             <option value="fbx">Standard FBX (Humanoid)</option>
           </select>
-          <button id="bakeBtn" class="btn-violet" style="flex:1.1;padding:7px 12px;font-size:0.82rem">
+          <button id="bakeBtn" class="btn-violet" style="flex:1.1 1 0;min-width:0;padding:7px 12px;font-size:0.82rem;white-space:nowrap;box-sizing:border-box">
             Bake to Mesh
           </button>
         </div>
@@ -982,6 +1297,85 @@
           <button id="tabMesh" class="view-tab" title="Show 3D Character Mesh Viewer">
             👤 3D Character View
           </button>
+        </div>
+
+        <!-- AI Engines & Models Status Pill (Centered in header space) -->
+        <div id="aiModelsStatusPill" class="ai-models-pill" title="Click to inspect AI Engine & Model pipeline">
+          <div class="ai-pill-badge">
+            <span class="ai-pill-dot ok" id="aiPillDot"></span>
+            <span class="ai-pill-title" id="aiPillTitle">AI Engines Ready</span>
+          </div>
+          <span class="ai-pill-divider" id="aiPillDivider">│</span>
+          <div class="ai-pill-models" id="aiPillModels">
+            <span class="ai-model-tag">SOMA 30J</span>
+            <span class="ai-model-dot">•</span>
+            <span class="ai-model-tag">LLaMA-3 Text</span>
+            <span class="ai-model-dot">•</span>
+            <span class="ai-model-tag">SkinTokens Rig</span>
+          </div>
+          <button id="aiPillQuickDlBtn" class="ai-pill-dl-btn" style="display:none" type="button">
+            📥 Download Weights
+          </button>
+          <div id="aiPillProgress" class="ai-pill-progress" style="display:none">
+            <div class="ai-pill-progress-bar-bg">
+              <div class="ai-pill-progress-bar" id="aiPillProgressBar"></div>
+            </div>
+            <span id="aiPillProgressText" style="color:var(--la-cyan);font-family:monospace;font-weight:700">0%</span>
+          </div>
+          <span class="ai-pill-chevron" id="aiPillChevron">▼</span>
+
+          <!-- Popover HUD -->
+          <div id="aiModelsPopover" class="ai-models-popover" style="display:none">
+            <div class="popover-header">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="ai-pill-dot ok" id="popoverHeaderDot"></span>
+                <span>AI Engine & Model Pipeline</span>
+              </div>
+              <span class="popover-close" id="closeAiPopoverBtn">×</span>
+            </div>
+            <div class="popover-body">
+              <div class="popover-row">
+                <div class="popover-icon">🏃</div>
+                <div class="popover-info">
+                  <div class="popover-name">Motion Synthesis</div>
+                  <div class="popover-desc">Kimodo SOMA RP v1.1 (30 joints, f32 GGUF)</div>
+                </div>
+                <div class="popover-status ready" id="popoverMotionStatus">Ready</div>
+              </div>
+              <div class="popover-row">
+                <div class="popover-icon">🔤</div>
+                <div class="popover-info">
+                  <div class="popover-name">Text Conditioning</div>
+                  <div class="popover-desc">LLM2Vec LLaMA-3 Text Bundle (32L, 4096-dim)</div>
+                </div>
+                <div class="popover-status ready" id="popoverTextStatus">Ready</div>
+              </div>
+              <div class="popover-row">
+                <div class="popover-icon">🦴</div>
+                <div class="popover-info">
+                  <div class="popover-name">Neural Auto-Rigging</div>
+                  <div class="popover-desc">SkinTokens F16 (MeshEncoder, Skin-VAE, TokenRig)</div>
+                </div>
+                <div class="popover-status ready" id="popoverSkinStatus">Ready</div>
+              </div>
+              <div class="popover-row">
+                <div class="popover-icon">⚡</div>
+                <div class="popover-info">
+                  <div class="popover-name">Compute Acceleration</div>
+                  <div class="popover-desc">Vulkan GPU / GGML High-Performance Runtime</div>
+                </div>
+                <div class="popover-status active">Active</div>
+              </div>
+              <div class="popover-row">
+                <div class="popover-icon">🎬</div>
+                <div class="popover-info">
+                  <div class="popover-name">Mesh Retargeting</div>
+                  <div class="popover-desc" id="popoverBlenderDesc">Blender (Auto-detected)</div>
+                </div>
+                <div class="popover-status ready" id="popoverBlenderStatus">Ready</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style="display:flex;align-items:center;gap:10px">
@@ -1032,20 +1426,40 @@
             <div id="armClearanceControl" class="arm-clearance-control">
               <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Arm:</span>
               <input id="armClearanceSlider" type="range" min="-10" max="30" step="1" value="0"
-                style="width:58px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
+                style="width:50px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
                 title="Adjust upper arm coronal abduction distance (-10° closer, +30° wider)">
-              <span id="armClearanceVal" style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--la-text);min-width:26px;text-align:right">0°</span>
+              <div style="display:inline-flex;align-items:center;gap:1px">
+                <input id="armClearanceVal" type="text" inputmode="decimal" value="0"
+                  class="clearance-num-input" title="Type upper arm angle in degrees (-10 to +30)">
+                <span style="font-size:0.72rem;color:var(--la-dim)">°</span>
+              </div>
 
               <div style="width:1px;height:14px;background:var(--la-line);margin:0 2px"></div>
 
               <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap">Forearm:</span>
               <input id="forearmClearanceSlider" type="range" min="-15" max="30" step="1" value="0"
-                style="width:58px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
+                style="width:50px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
                 title="Adjust forearm coronal abduction distance (-15° closer, +30° wider)">
-              <span id="forearmClearanceVal" style="font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--la-text);min-width:26px;text-align:right">0°</span>
+              <div style="display:inline-flex;align-items:center;gap:1px">
+                <input id="forearmClearanceVal" type="text" inputmode="decimal" value="0"
+                  class="clearance-num-input" title="Type forearm angle in degrees (-15 to +30)">
+                <span style="font-size:0.72rem;color:var(--la-dim)">°</span>
+              </div>
+
+              <div style="width:1px;height:14px;background:var(--la-line);margin:0 2px"></div>
+
+              <span style="font-size:0.72rem;font-weight:600;color:var(--la-cyan-2);white-space:nowrap" title="Fine-tune character floor grounding elevation">Ground:</span>
+              <input id="groundOffsetSlider" type="range" min="-10" max="10" step="0.5" value="0"
+                style="width:50px;height:4px;accent-color:var(--la-cyan);cursor:pointer;"
+                title="Shift character elevation (-10 cm lower to plant hovering feet, +10 cm higher if sinking)">
+              <div style="display:inline-flex;align-items:center;gap:1px">
+                <input id="groundOffsetVal" type="text" inputmode="decimal" value="0"
+                  class="clearance-num-input clearance-ground-input" title="Type ground elevation offset in cm (-25 to +25)">
+                <span style="font-size:0.7rem;color:var(--la-dim)">cm</span>
+              </div>
 
               <button id="rebakeClearanceBtn" type="button" class="btn-rebake-clearance" style="display:none"
-                title="Bake this arm & forearm clearance offset into the exported .glb/.fbx model">
+                title="Bake this arm, forearm & grounding offset into the exported .glb/.fbx model">
                 <span>🔄 Re-bake</span>
               </button>
             </div>
@@ -1156,6 +1570,81 @@
       <div id="modalFolderList"
         style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px">
         <div style="color:var(--la-muted);font-size:0.85rem">Loading output files…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blender Configuration & Relocate Modal -->
+  <div id="blenderModal"
+    style="display:none;position:fixed;inset:0;background:rgba(4,7,10,0.85);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div
+      style="background:#0d131a;border:1px solid var(--la-line);border-radius:12px;width:100%;max-width:560px;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.8);overflow:hidden;color:var(--la-text)">
+      <!-- Modal Header -->
+      <div
+        style="padding:14px 18px;border-bottom:1px solid var(--la-line);display:flex;align-items:center;justify-content:space-between;background:rgba(20,28,38,0.5)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.1rem">🎬</span>
+          <h3 style="margin:0;font-size:1.0rem;font-weight:700;color:var(--la-text)">Configure Blender Engine</h3>
+        </div>
+        <button id="closeBlenderModal" type="button"
+          style="background:transparent;border:0;color:var(--la-muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 8px;border-radius:6px;box-shadow:none">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:0.8rem;color:var(--la-muted);line-height:1.45">
+          Kimodo-CPP runs Blender headlessly in the background to bake generated motions onto humanoid rigs and convert SkinTokens auto-rigs into standard Mixamo bone hierarchies.
+        </div>
+
+        <!-- Status Card -->
+        <div id="modalBlenderCard" style="background:#141f2c;border:1px solid var(--la-line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:0.75rem;color:var(--la-muted);font-weight:600">CURRENT STATUS</span>
+            <span id="modalBlenderBadge" style="font-size:0.7rem;font-weight:700;padding:2px 6px;border-radius:4px">Checking...</span>
+          </div>
+          <div id="modalBlenderPath" style="font-family:'JetBrains Mono',monospace;font-size:0.74rem;color:var(--la-cyan);word-break:break-all;line-height:1.3">
+            Detecting...
+          </div>
+          <div id="modalBlenderVersion" style="font-size:0.72rem;color:var(--la-muted)"></div>
+        </div>
+
+        <!-- Browse Actions -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button id="modalBrowseBtn" type="button" class="btn-violet"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;font-size:0.84rem;font-weight:700;cursor:pointer">
+            <span>📂</span> Browse for Blender Executable...
+          </button>
+          
+          <div style="display:flex;align-items:center;gap:10px;margin:4px 0">
+            <div style="flex:1;height:1px;background:var(--la-line)"></div>
+            <span style="font-size:0.7rem;color:var(--la-muted);text-transform:uppercase;letter-spacing:0.5px">or enter path manually</span>
+            <div style="flex:1;height:1px;background:var(--la-line)"></div>
+          </div>
+
+          <div style="display:flex;gap:6px">
+            <input id="modalPathInput" type="text" placeholder="e.g. C:\Blender\blender.exe or /Applications/Blender.app"
+              style="flex:1;background:#090d13;color:#f2f5fb;border:1px solid var(--la-line);border-radius:7px;padding:7px 10px;font-size:0.78rem;font-family:'JetBrains Mono',monospace">
+            <button id="modalSavePathBtn" type="button"
+              style="padding:7px 14px;background:#1e293b;border:1px solid var(--la-line);border-radius:7px;color:#f2f5fb;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap">
+              Verify & Save
+            </button>
+          </div>
+        </div>
+
+        <!-- Alert / Feedback Banner -->
+        <div id="modalBlenderFeedback" style="display:none;font-size:0.76rem;padding:8px 12px;border-radius:6px;line-height:1.35"></div>
+
+        <!-- Footer -->
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--la-line);padding-top:12px;margin-top:2px">
+          <button id="modalResetAutoBtn" type="button"
+            style="background:transparent;border:0;color:var(--la-muted);font-size:0.74rem;cursor:pointer;text-decoration:underline;padding:0">
+            Reset to Auto-Detection
+          </button>
+          <button id="modalDoneBtn" type="button"
+            style="background:#1e293b;border:1px solid var(--la-line);border-radius:6px;color:#f2f5fb;padding:5px 16px;font-size:0.78rem;cursor:pointer;font-weight:600">
+            Done
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1413,7 +1902,11 @@
     const armClearanceSlider = document.querySelector('#armClearanceSlider');
     const armClearanceVal = document.querySelector('#armClearanceVal');
     const forearmClearanceSlider = document.querySelector('#forearmClearanceSlider');
+    const groundOffsetSlider = document.querySelector('#groundOffsetSlider');
+    const groundOffsetVal = document.querySelector('#groundOffsetVal');
     const rebakeClearanceBtn = document.querySelector('#rebakeClearanceBtn');
+    let groundOffsetCm = 0;
+    let charBaseY = 0;
 
     // Weight Paint Mode Elements & State
     const weightPaintControl = document.querySelector('#weightPaintControl');
@@ -1595,15 +2088,26 @@
       applyArmClearance();
     }
 
+    function applyGroundingOffset() {
+      if (!currentCharacterModel) return;
+      const offsetM = groundOffsetCm / 100.0;
+      currentCharacterModel.position.y = charBaseY + offsetM;
+      currentCharacterModel.updateMatrixWorld(true);
+    }
+
     function resetArmClearanceSlider() {
       armClearanceDeg = 0;
       forearmClearanceDeg = 0;
+      groundOffsetCm = 0;
       if (armClearanceSlider) armClearanceSlider.value = 0;
-      if (armClearanceVal) armClearanceVal.textContent = '0°';
+      if (armClearanceVal) armClearanceVal.value = 0;
       if (forearmClearanceSlider) forearmClearanceSlider.value = 0;
-      if (forearmClearanceVal) forearmClearanceVal.textContent = '0°';
+      if (forearmClearanceVal) forearmClearanceVal.value = 0;
+      if (groundOffsetSlider) groundOffsetSlider.value = 0;
+      if (groundOffsetVal) groundOffsetVal.value = 0;
       if (rebakeClearanceBtn) rebakeClearanceBtn.style.display = 'none';
       applyArmClearance();
+      applyGroundingOffset();
       if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
         threeRenderer.render(threeScene, threeCamera);
       }
@@ -1613,19 +2117,23 @@
       if (!rebakeClearanceBtn) return;
       const hasArm = Math.abs(armClearanceDeg) > 0.01;
       const hasFa = Math.abs(forearmClearanceDeg) > 0.01;
-      if (hasArm || hasFa) {
+      const hasGround = Math.abs(groundOffsetCm) > 0.01;
+      if (hasArm || hasFa || hasGround) {
         rebakeClearanceBtn.style.display = 'inline-flex';
-        const armSign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
-        const faSign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
-        let label = '🔄 Re-bake';
-        if (hasArm && hasFa) {
-          label = `🔄 Re-bake (${armSign}°, ${faSign}°)`;
-        } else if (hasArm) {
-          label = `🔄 Re-bake (${armSign}°)`;
-        } else {
-          label = `🔄 Re-bake (Forearm ${faSign}°)`;
+        const parts = [];
+        if (hasArm) {
+          const armSign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
+          parts.push(`Arm ${armSign}°`);
         }
-        rebakeClearanceBtn.innerHTML = `<span>${label}</span>`;
+        if (hasFa) {
+          const faSign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
+          parts.push(`Forearm ${faSign}°`);
+        }
+        if (hasGround) {
+          const gSign = groundOffsetCm > 0 ? `+${groundOffsetCm}` : `${groundOffsetCm}`;
+          parts.push(`Ground ${gSign}cm`);
+        }
+        rebakeClearanceBtn.innerHTML = `<span>🔄 Re-bake (${parts.join(', ')})</span>`;
       } else {
         rebakeClearanceBtn.style.display = 'none';
       }
@@ -1634,13 +2142,36 @@
     if (armClearanceSlider) {
       armClearanceSlider.oninput = () => {
         armClearanceDeg = parseFloat(armClearanceSlider.value) || 0;
-        const sign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
-        if (armClearanceVal) armClearanceVal.textContent = `${sign}°`;
+        if (armClearanceVal) armClearanceVal.value = armClearanceDeg;
         updateRebakeBtnState();
-
-        // Apply clearance immediately to current frame
         applyArmClearance();
-
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
+    if (armClearanceVal) {
+      armClearanceVal.oninput = () => {
+        const raw = armClearanceVal.value.trim();
+        if (raw === '-' || raw === '-.' || raw === '' || raw === '.') return;
+        const val = parseFloat(raw);
+        if (!isNaN(val)) {
+          armClearanceDeg = Math.min(30, Math.max(-10, val));
+          if (armClearanceSlider) armClearanceSlider.value = armClearanceDeg;
+          updateRebakeBtnState();
+          applyArmClearance();
+          if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+            threeRenderer.render(threeScene, threeCamera);
+          }
+        }
+      };
+      armClearanceVal.onblur = () => {
+        const val = parseFloat(armClearanceVal.value);
+        armClearanceDeg = isNaN(val) ? 0 : Math.min(30, Math.max(-10, val));
+        armClearanceVal.value = armClearanceDeg;
+        if (armClearanceSlider) armClearanceSlider.value = armClearanceDeg;
+        updateRebakeBtnState();
+        applyArmClearance();
         if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
           threeRenderer.render(threeScene, threeCamera);
         }
@@ -1650,13 +2181,75 @@
     if (forearmClearanceSlider) {
       forearmClearanceSlider.oninput = () => {
         forearmClearanceDeg = parseFloat(forearmClearanceSlider.value) || 0;
-        const sign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
-        if (forearmClearanceVal) forearmClearanceVal.textContent = `${sign}°`;
+        if (forearmClearanceVal) forearmClearanceVal.value = forearmClearanceDeg;
         updateRebakeBtnState();
-
-        // Apply clearance immediately to current frame
         applyArmClearance();
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
+    if (forearmClearanceVal) {
+      forearmClearanceVal.oninput = () => {
+        const raw = forearmClearanceVal.value.trim();
+        if (raw === '-' || raw === '-.' || raw === '' || raw === '.') return;
+        const val = parseFloat(raw);
+        if (!isNaN(val)) {
+          forearmClearanceDeg = Math.min(30, Math.max(-15, val));
+          if (forearmClearanceSlider) forearmClearanceSlider.value = forearmClearanceDeg;
+          updateRebakeBtnState();
+          applyArmClearance();
+          if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+            threeRenderer.render(threeScene, threeCamera);
+          }
+        }
+      };
+      forearmClearanceVal.onblur = () => {
+        const val = parseFloat(forearmClearanceVal.value);
+        forearmClearanceDeg = isNaN(val) ? 0 : Math.min(30, Math.max(-15, val));
+        forearmClearanceVal.value = forearmClearanceDeg;
+        if (forearmClearanceSlider) forearmClearanceSlider.value = forearmClearanceDeg;
+        updateRebakeBtnState();
+        applyArmClearance();
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
 
+    if (groundOffsetSlider) {
+      groundOffsetSlider.oninput = () => {
+        groundOffsetCm = parseFloat(groundOffsetSlider.value) || 0;
+        if (groundOffsetVal) groundOffsetVal.value = groundOffsetCm;
+        updateRebakeBtnState();
+        applyGroundingOffset();
+        if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+          threeRenderer.render(threeScene, threeCamera);
+        }
+      };
+    }
+    if (groundOffsetVal) {
+      groundOffsetVal.oninput = () => {
+        const raw = groundOffsetVal.value.trim();
+        if (raw === '-' || raw === '-.' || raw === '' || raw === '.') return;
+        const val = parseFloat(raw);
+        if (!isNaN(val)) {
+          groundOffsetCm = Math.min(25, Math.max(-25, val));
+          if (groundOffsetSlider) groundOffsetSlider.value = Math.min(10, Math.max(-10, groundOffsetCm));
+          updateRebakeBtnState();
+          applyGroundingOffset();
+          if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
+            threeRenderer.render(threeScene, threeCamera);
+          }
+        }
+      };
+      groundOffsetVal.onblur = () => {
+        const val = parseFloat(groundOffsetVal.value);
+        groundOffsetCm = isNaN(val) ? 0 : Math.min(25, Math.max(-25, val));
+        groundOffsetVal.value = groundOffsetCm;
+        if (groundOffsetSlider) groundOffsetSlider.value = Math.min(10, Math.max(-10, groundOffsetCm));
+        updateRebakeBtnState();
+        applyGroundingOffset();
         if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
           threeRenderer.render(threeScene, threeCamera);
         }
@@ -1678,16 +2271,20 @@
         rebakeClearanceBtn.disabled = true;
         rebakeClearanceBtn.innerHTML = '<span>⏳ Re-baking…</span>';
 
+        const parts = [];
+        if (Math.abs(armClearanceDeg) > 0.01) parts.push(`Arm: ${armClearanceDeg > 0 ? '+' : ''}${armClearanceDeg}°`);
+        if (Math.abs(forearmClearanceDeg) > 0.01) parts.push(`Forearm: ${forearmClearanceDeg > 0 ? '+' : ''}${forearmClearanceDeg}°`);
+        if (Math.abs(groundOffsetCm) > 0.01) parts.push(`Ground: ${groundOffsetCm > 0 ? '+' : ''}${groundOffsetCm}cm`);
+        const summaryStr = parts.join(', ') || 'offset';
+
         bakeStatus.className = 'readout progress';
-        const armSign = armClearanceDeg > 0 ? `+${armClearanceDeg}` : `${armClearanceDeg}`;
-        const faSign = forearmClearanceDeg > 0 ? `+${forearmClearanceDeg}` : `${forearmClearanceDeg}`;
-        bakeStatus.textContent = `Re-baking character (Arm: ${armSign}°, Forearm: ${faSign}°)…`;
+        bakeStatus.textContent = `Re-baking character (${summaryStr})…`;
 
         try {
           let res;
           const file = charFile.files && charFile.files[0];
           if (file) {
-            const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
+            const url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}&grounding_offset=${groundOffsetCm}`;
             res = await fetch(url, { method: 'POST', body: file });
           } else {
             // Re-bake existing character on disk
@@ -1699,7 +2296,8 @@
                 filename: currentUploadedFileName || 'character.fbx',
                 format: charFormat.value,
                 arm_clearance: armClearanceDeg,
-                forearm_clearance: forearmClearanceDeg
+                forearm_clearance: forearmClearanceDeg,
+                grounding_offset: groundOffsetCm
               })
             });
           }
@@ -1710,7 +2308,7 @@
           }
 
           bakeStatus.className = 'readout';
-          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Re-bake complete with clearance (Arm: ${armSign}°, Forearm: ${faSign}°)!</span>`;
+          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Re-bake complete (${summaryStr})!</span>`;
           bakeDownload.href = data.download_url;
           bakeDownload.download = data.filename;
           bakeDownload.textContent = `Download ${data.filename}`;
@@ -1721,7 +2319,7 @@
             await loadRetargetedModel(data.preview_url + '?t=' + Date.now(), (data.character_name || 'Character') + ' (Animated)', 'glb', true);
           }
 
-          // Reset slider back to 0° since clearance is now baked directly into the model
+          // Reset slider back to 0 since clearance/grounding is now baked directly into the model
           resetArmClearanceSlider();
           refresh();
         } catch (err) {
@@ -2005,11 +2603,18 @@
 
           const count = geom.attributes.position.count;
           totalMeshVerts += count;
-          let colors = geom.attributes.color;
-          if (!colors || colors.count !== count) {
-            colors = new THREE.BufferAttribute(new Float32Array(count * 3), 3);
-            geom.setAttribute('color', colors);
+
+          // Preserve original vertex color attribute (if any) so we never mutate or corrupt original model vertex colors
+          if (geom._origColorAttribute === undefined) {
+            geom._origColorAttribute = geom.attributes.color || null;
           }
+
+          // Always ensure a dedicated Float32Array RGB (itemSize 3) attribute for weight painting heatmap
+          if (!geom._weightColorAttribute || geom._weightColorAttribute.count !== count) {
+            geom._weightColorAttribute = new THREE.BufferAttribute(new Float32Array(count * 3), 3);
+          }
+          geom.setAttribute('color', geom._weightColorAttribute);
+          let colors = geom._weightColorAttribute;
 
           // Switch to weight material with skinning enabled so animation is preserved
           if (!child._origMaterial) child._origMaterial = child.material;
@@ -2018,10 +2623,12 @@
               vertexColors: true,
               roughness: 0.55,
               metalness: 0.05,
-              skinning: true
+              skinning: true,
+              side: THREE.DoubleSide
             });
           }
           child.material = child._weightMaterial;
+          child.material.needsUpdate = true;
 
           // Precompute bone colors for All Bones mode
           let boneColors = null;
@@ -2153,8 +2760,24 @@
     function restoreOriginalMaterials() {
       if (!currentCharacterModel) return;
       currentCharacterModel.traverse(child => {
-        if (child.isSkinnedMesh && child._origMaterial) {
-          child.material = child._origMaterial;
+        if (child.isMesh) {
+          if (child._origMaterial) {
+            child.material = child._origMaterial;
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => { if (m) m.needsUpdate = true; });
+            } else if (child.material) {
+              child.material.needsUpdate = true;
+            }
+          }
+          if (child.geometry && child.geometry._origColorAttribute !== undefined) {
+            const geom = child.geometry;
+            if (geom._origColorAttribute) {
+              geom.setAttribute('color', geom._origColorAttribute);
+              geom._origColorAttribute.needsUpdate = true;
+            } else {
+              geom.deleteAttribute('color');
+            }
+          }
         }
       });
       if (threeRenderer && threeScene && threeCamera && !isRecordingTurntable) {
@@ -2361,20 +2984,20 @@
         if (node.isBone) {
           const name = (node.name || '').toLowerCase();
           if (!leftPos && (
-            name.includes('leftupleg') || name.includes('l_thigh') || name.includes('l thigh') ||
+            name.includes('leftupleg') || name.includes('thigh_l') || name.includes('l_thigh') || name.includes('l thigh') ||
             name.includes('thigh.l') || name.includes('leg.l') || name.includes('l leg') ||
             name.includes('leftleg') || name.includes('leftfoot') || name.includes('l_foot') ||
-            name.includes('leftarm') || name.includes('leftshoulder') || name.includes('l_arm') ||
-            name.includes('arm.l') || name.includes('shoulder.l') || name.includes('leftclavicle')
+            name.includes('leftarm') || name.includes('upperarm_l') || name.includes('leftshoulder') || name.includes('l_arm') ||
+            name.includes('arm.l') || name.includes('shoulder.l') || name.includes('clavicle_l') || name.includes('leftclavicle')
           )) {
             leftPos = new THREE.Vector3();
             node.getWorldPosition(leftPos);
           } else if (!rightPos && (
-            name.includes('rightupleg') || name.includes('r_thigh') || name.includes('r thigh') ||
+            name.includes('rightupleg') || name.includes('thigh_r') || name.includes('r_thigh') || name.includes('r thigh') ||
             name.includes('thigh.r') || name.includes('leg.r') || name.includes('r leg') ||
             name.includes('rightleg') || name.includes('rightfoot') || name.includes('r_foot') ||
-            name.includes('rightarm') || name.includes('rightshoulder') || name.includes('r_arm') ||
-            name.includes('arm.r') || name.includes('shoulder.r') || name.includes('rightclavicle')
+            name.includes('rightarm') || name.includes('upperarm_r') || name.includes('rightshoulder') || name.includes('r_arm') ||
+            name.includes('arm.r') || name.includes('shoulder.r') || name.includes('clavicle_r') || name.includes('rightclavicle')
           )) {
             rightPos = new THREE.Vector3();
             node.getWorldPosition(rightPos);
@@ -2456,6 +3079,10 @@
           box = getTrueCharacterBounds(currentCharacterModel);
           size = box.getSize(new THREE.Vector3());
           center = box.getCenter(new THREE.Vector3());
+        }
+        charBaseY = currentCharacterModel.position.y;
+        if (Math.abs(groundOffsetCm) > 0.01) {
+          applyGroundingOffset();
         }
 
         // Auto-frame camera based on true character bounds
@@ -3032,6 +3659,456 @@
     const autoRigGpuCheck = document.querySelector('#autoRigGpuCheck');
     const autoRigBtn = document.querySelector('#autoRigBtn');
 
+    // --- BLENDER ENGINE STATUS & RELOCATE CONTROLS ---
+    const blenderStatusBar = document.querySelector('#blenderStatusBar');
+    const blenderDot = document.querySelector('#blenderDot');
+    const blenderTitleText = document.querySelector('#blenderTitleText');
+    const blenderBadge = document.querySelector('#blenderBadge');
+    const blenderPathDisplay = document.querySelector('#blenderPathDisplay');
+    const blenderRelocateBtn = document.querySelector('#blenderRelocateBtn');
+
+    const blenderModal = document.querySelector('#blenderModal');
+    const closeBlenderModal = document.querySelector('#closeBlenderModal');
+    const modalDoneBtn = document.querySelector('#modalDoneBtn');
+    const modalBrowseBtn = document.querySelector('#modalBrowseBtn');
+    const modalPathInput = document.querySelector('#modalPathInput');
+    const modalSavePathBtn = document.querySelector('#modalSavePathBtn');
+    const modalResetAutoBtn = document.querySelector('#modalResetAutoBtn');
+    const modalBlenderBadge = document.querySelector('#modalBlenderBadge');
+    const modalBlenderPath = document.querySelector('#modalBlenderPath');
+    const modalBlenderVersion = document.querySelector('#modalBlenderVersion');
+    const modalBlenderFeedback = document.querySelector('#modalBlenderFeedback');
+
+    let currentBlenderInfo = null;
+
+    function setModalFeedback(msg, isSuccess = true) {
+      if (!modalBlenderFeedback) return;
+      if (!msg) {
+        modalBlenderFeedback.style.display = 'none';
+        return;
+      }
+      modalBlenderFeedback.style.display = 'block';
+      modalBlenderFeedback.style.background = isSuccess ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+      modalBlenderFeedback.style.border = isSuccess ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(239,68,68,0.4)';
+      modalBlenderFeedback.style.color = isSuccess ? '#4ade80' : '#f87171';
+      modalBlenderFeedback.textContent = msg;
+    }
+
+    function updateBlenderUI(info) {
+      currentBlenderInfo = info;
+      const found = !!info?.found;
+      const isManual = !!info?.is_manual;
+      const path = info?.path || 'Not detected';
+      const version = info?.version || 'Blender';
+
+      // Update sidebar status bar
+      if (blenderDot) blenderDot.textContent = found ? '🟢' : '🔴';
+      if (blenderTitleText) blenderTitleText.textContent = found ? (version.split('\n')[0] || 'Blender') : 'Blender Missing';
+      if (blenderBadge) {
+        blenderBadge.textContent = found ? (isManual ? 'Manual' : 'Auto') : 'Missing';
+        blenderBadge.style.background = found ? (isManual ? 'rgba(56,189,248,0.18)' : 'rgba(34,197,94,0.18)') : 'rgba(239,68,68,0.2)';
+        blenderBadge.style.color = found ? (isManual ? '#38bdf8' : '#4ade80') : '#f87171';
+      }
+      if (blenderPathDisplay) {
+        blenderPathDisplay.textContent = found ? path : 'Click Locate Blender to select executable';
+        blenderPathDisplay.title = found ? path : 'Blender executable required for retargeting & rigging';
+      }
+      if (blenderRelocateBtn) {
+        blenderRelocateBtn.innerHTML = found ? '📂 Relocate' : '🔍 Locate Blender';
+        blenderRelocateBtn.style.border = found ? '1px solid var(--la-line)' : '1px solid rgba(239,68,68,0.6)';
+        blenderRelocateBtn.style.background = found ? '#182530' : 'rgba(239,68,68,0.2)';
+        blenderRelocateBtn.style.color = found ? 'var(--la-cyan)' : '#fca5a5';
+      }
+
+      // Update modal if open
+      if (modalBlenderBadge) {
+        modalBlenderBadge.textContent = found ? (isManual ? 'MANUAL OVERRIDE' : 'AUTO DETECTED') : 'NOT FOUND';
+        modalBlenderBadge.style.background = found ? (isManual ? 'rgba(56,189,248,0.2)' : 'rgba(34,197,94,0.2)') : 'rgba(239,68,68,0.25)';
+        modalBlenderBadge.style.color = found ? (isManual ? '#38bdf8' : '#4ade80') : '#f87171';
+      }
+      if (modalBlenderPath) modalBlenderPath.textContent = found ? path : 'No valid executable found';
+      if (modalBlenderVersion) modalBlenderVersion.textContent = found ? (info.version || '') : 'Please locate blender.exe or Blender.app';
+      if (modalPathInput && found && path) modalPathInput.value = path;
+      if (modalResetAutoBtn) modalResetAutoBtn.style.display = isManual ? 'inline-block' : 'none';
+
+      // Update AI HUD popover blender status
+      if (typeof popoverBlenderStatus !== 'undefined' && popoverBlenderStatus) {
+        popoverBlenderStatus.textContent = found ? 'Ready' : 'Not Found';
+        popoverBlenderStatus.className = `popover-status ${found ? 'ready' : 'missing'}`;
+      }
+      if (typeof popoverBlenderDesc !== 'undefined' && popoverBlenderDesc) {
+        popoverBlenderDesc.textContent = found ? `${info.version || 'Blender'} (${path})` : 'Blender not detected (needed for retargeting)';
+      }
+    }
+
+    async function fetchBlenderInfo() {
+      try {
+        const res = await fetch('/api/blender');
+        if (res.ok) {
+          const data = await res.json();
+          updateBlenderUI(data);
+          return data;
+        }
+      } catch (e) {
+        console.warn("Blender status check failed:", e);
+      }
+      return null;
+    }
+
+    function openBlenderModal() {
+      if (!blenderModal) return;
+      setModalFeedback('');
+      if (currentBlenderInfo && currentBlenderInfo.path && modalPathInput) {
+        modalPathInput.value = currentBlenderInfo.path;
+      }
+      blenderModal.style.display = 'flex';
+    }
+
+    function closeBlenderModalFn() {
+      if (blenderModal) blenderModal.style.display = 'none';
+    }
+
+    if (blenderRelocateBtn) blenderRelocateBtn.onclick = openBlenderModal;
+    if (closeBlenderModal) closeBlenderModal.onclick = closeBlenderModalFn;
+    if (modalDoneBtn) modalDoneBtn.onclick = closeBlenderModalFn;
+    if (blenderModal) {
+      blenderModal.onclick = (e) => {
+        if (e.target === blenderModal) closeBlenderModalFn();
+      };
+    }
+
+    // Browse file on system
+    if (modalBrowseBtn) {
+      modalBrowseBtn.onclick = async () => {
+        const origText = modalBrowseBtn.innerHTML;
+        modalBrowseBtn.disabled = true;
+        modalBrowseBtn.innerHTML = '<span>⏳</span> Opening system file picker...';
+        setModalFeedback('File picker opened on your computer. Please select blender.exe or Blender.app...', true);
+        try {
+          const res = await fetch('/api/blender/browse', { method: 'POST' });
+          const data = await res.json();
+          if (data.cancelled) {
+            setModalFeedback('File selection cancelled.', false);
+          } else if (data.success) {
+            updateBlenderUI(data);
+            setModalFeedback(`✓ Verified: ${data.version}`, true);
+          } else {
+            setModalFeedback(data.error || 'Failed to validate selected executable.', false);
+          }
+        } catch (err) {
+          setModalFeedback(`Error: ${err.message}`, false);
+        } finally {
+          modalBrowseBtn.disabled = false;
+          modalBrowseBtn.innerHTML = origText;
+        }
+      };
+    }
+
+    // Manual Save & Verify path
+    if (modalSavePathBtn && modalPathInput) {
+      modalSavePathBtn.onclick = async () => {
+        const enteredPath = modalPathInput.value.trim();
+        if (!enteredPath) {
+          setModalFeedback('Please enter a valid file path to blender executable.', false);
+          return;
+        }
+        modalSavePathBtn.disabled = true;
+        modalSavePathBtn.textContent = 'Verifying...';
+        setModalFeedback('Executing test to verify Blender version...', true);
+        try {
+          const res = await fetch('/api/blender', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: enteredPath })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            updateBlenderUI(data);
+            setModalFeedback(`✓ Successfully verified: ${data.version}`, true);
+          } else {
+            setModalFeedback(data.error || 'Invalid Blender path.', false);
+          }
+        } catch (err) {
+          setModalFeedback(`Verification error: ${err.message}`, false);
+        } finally {
+          modalSavePathBtn.disabled = false;
+          modalSavePathBtn.textContent = 'Verify & Save';
+        }
+      };
+    }
+
+    // Reset to auto-detection
+    if (modalResetAutoBtn) {
+      modalResetAutoBtn.onclick = async () => {
+        modalResetAutoBtn.disabled = true;
+        try {
+          const res = await fetch('/api/blender/reset', { method: 'POST' });
+          const data = await res.json();
+          updateBlenderUI(data);
+          setModalFeedback(data.found ? `✓ Reset to automatic detection (${data.version})` : 'Reset. No standard Blender found.', data.found);
+        } catch (err) {
+          setModalFeedback(`Error: ${err.message}`, false);
+        } finally {
+          modalResetAutoBtn.disabled = false;
+        }
+      };
+    }
+
+    // Initial check on load
+    fetchBlenderInfo();
+
+    // --- AI ENGINES & MODELS STATUS PILL IN HEADER ---
+    const aiModelsStatusPill = document.querySelector('#aiModelsStatusPill');
+    const aiPillDot = document.querySelector('#aiPillDot');
+    const aiPillTitle = document.querySelector('#aiPillTitle');
+    const aiPillDivider = document.querySelector('#aiPillDivider');
+    const aiPillModels = document.querySelector('#aiPillModels');
+    const aiPillQuickDlBtn = document.querySelector('#aiPillQuickDlBtn');
+    const aiPillProgress = document.querySelector('#aiPillProgress');
+    const aiPillProgressBar = document.querySelector('#aiPillProgressBar');
+    const aiPillProgressText = document.querySelector('#aiPillProgressText');
+    const aiModelsPopover = document.querySelector('#aiModelsPopover');
+    const closeAiPopoverBtn = document.querySelector('#closeAiPopoverBtn');
+    const popoverHeaderDot = document.querySelector('#popoverHeaderDot');
+    const popoverMotionStatus = document.querySelector('#popoverMotionStatus');
+    const popoverTextStatus = document.querySelector('#popoverTextStatus');
+    const popoverSkinStatus = document.querySelector('#popoverSkinStatus');
+    const popoverBlenderStatus = document.querySelector('#popoverBlenderStatus');
+    const popoverBlenderDesc = document.querySelector('#popoverBlenderDesc');
+
+    function updateAiHeaderPill(data) {
+      if (!aiModelsStatusPill) return;
+
+      const dlState = data?.download_state;
+      const isDownloading = dlState && dlState.status === 'downloading';
+
+      if (isDownloading) {
+        if (aiPillDot) aiPillDot.className = 'ai-pill-dot warn pulse';
+        if (aiPillTitle) aiPillTitle.textContent = 'Downloading Models';
+        if (aiPillDivider) aiPillDivider.style.display = 'none';
+        if (aiPillModels) aiPillModels.style.display = 'none';
+        if (aiPillQuickDlBtn) aiPillQuickDlBtn.style.display = 'none';
+        if (aiPillProgress) aiPillProgress.style.display = 'inline-flex';
+        const pct = dlState.percent || 0;
+        if (aiPillProgressBar) aiPillProgressBar.style.width = `${pct}%`;
+        if (aiPillProgressText) aiPillProgressText.textContent = `${pct}%`;
+        return;
+      }
+
+      if (data?.all_ready) {
+        if (aiPillDot) aiPillDot.className = 'ai-pill-dot ok';
+        if (popoverHeaderDot) popoverHeaderDot.className = 'ai-pill-dot ok';
+        if (aiPillTitle) aiPillTitle.textContent = 'AI Engines Ready';
+        if (aiPillDivider) aiPillDivider.style.display = 'inline';
+        if (aiPillModels) aiPillModels.style.display = 'inline-flex';
+        if (aiPillQuickDlBtn) aiPillQuickDlBtn.style.display = 'none';
+        if (aiPillProgress) aiPillProgress.style.display = 'none';
+
+        if (popoverMotionStatus) {
+          popoverMotionStatus.textContent = 'Ready';
+          popoverMotionStatus.className = 'popover-status ready';
+        }
+        if (popoverTextStatus) {
+          popoverTextStatus.textContent = 'Ready';
+          popoverTextStatus.className = 'popover-status ready';
+        }
+        if (popoverSkinStatus) {
+          popoverSkinStatus.textContent = 'Ready';
+          popoverSkinStatus.className = 'popover-status ready';
+        }
+      } else {
+        if (aiPillDot) aiPillDot.className = 'ai-pill-dot warn pulse';
+        if (popoverHeaderDot) popoverHeaderDot.className = 'ai-pill-dot warn';
+        if (aiPillTitle) aiPillTitle.textContent = 'AI Setup Required';
+        if (aiPillDivider) aiPillDivider.style.display = 'none';
+        if (aiPillModels) aiPillModels.style.display = 'none';
+        if (aiPillQuickDlBtn) aiPillQuickDlBtn.style.display = 'inline-flex';
+        if (aiPillProgress) aiPillProgress.style.display = 'none';
+
+        if (popoverMotionStatus) {
+          const ok = data?.motion?.ready;
+          popoverMotionStatus.textContent = ok ? 'Ready' : 'Missing';
+          popoverMotionStatus.className = `popover-status ${ok ? 'ready' : 'missing'}`;
+        }
+        if (popoverTextStatus) {
+          const ok = data?.text_bundle?.ready;
+          popoverTextStatus.textContent = ok ? 'Ready' : 'Missing';
+          popoverTextStatus.className = `popover-status ${ok ? 'ready' : 'missing'}`;
+        }
+        if (popoverSkinStatus) {
+          const ok = data?.skintokens?.ready;
+          popoverSkinStatus.textContent = ok ? 'Ready' : 'Missing';
+          popoverSkinStatus.className = `popover-status ${ok ? 'ready' : 'missing'}`;
+        }
+      }
+    }
+
+    // Toggle popover HUD on pill click
+    if (aiModelsStatusPill) {
+      aiModelsStatusPill.addEventListener('click', (e) => {
+        if (e.target.closest('#aiPillQuickDlBtn') || e.target.closest('#aiModelsPopover')) {
+          return;
+        }
+        e.stopPropagation();
+        const isOpen = aiModelsPopover.style.display === 'block';
+        aiModelsPopover.style.display = isOpen ? 'none' : 'block';
+        aiModelsStatusPill.classList.toggle('open', !isOpen);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (aiModelsPopover && !aiModelsStatusPill.contains(e.target)) {
+          aiModelsPopover.style.display = 'none';
+          aiModelsStatusPill.classList.remove('open');
+        }
+      });
+    }
+
+    if (closeAiPopoverBtn) {
+      closeAiPopoverBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (aiModelsPopover) aiModelsPopover.style.display = 'none';
+        if (aiModelsStatusPill) aiModelsStatusPill.classList.remove('open');
+      });
+    }
+
+    if (aiPillQuickDlBtn) {
+      aiPillQuickDlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (startDownloadBtn) {
+          startDownloadBtn.click();
+        }
+      });
+    }
+
+    // --- AUTOMATED FIRST-TIME MODEL DOWNLOADER ---
+    const modelSetupBanner = document.querySelector('#modelSetupBanner');
+    const modelSetupDetails = document.querySelector('#modelSetupDetails');
+    const modelMissingList = document.querySelector('#modelMissingList');
+    const startDownloadBtn = document.querySelector('#startDownloadBtn');
+    const modelDownloadProgressContainer = document.querySelector('#modelDownloadProgressContainer');
+    const modelDownloadStatusText = document.querySelector('#modelDownloadStatusText');
+    const modelDownloadPctText = document.querySelector('#modelDownloadPctText');
+    const modelDownloadProgressBar = document.querySelector('#modelDownloadProgressBar');
+    const modelDownloadStep = document.querySelector('#modelDownloadStep');
+
+    let isPollingModelDownload = false;
+
+    async function checkModelHealth() {
+      try {
+        const res = await fetch('/api/models/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Update header status pill immediately
+        updateAiHeaderPill(data);
+
+        const dlState = data.download_state;
+        const isDownloading = dlState && dlState.status === 'downloading';
+
+        if (isDownloading) {
+          showModelDownloadProgress(dlState);
+          startModelDownloadPolling();
+          return;
+        }
+
+        if (!data.all_ready) {
+          if (modelSetupBanner) modelSetupBanner.style.display = 'flex';
+          if (modelMissingList) {
+            modelMissingList.textContent = (data.missing || []).join(', ') || 'Essential weights missing';
+          }
+          if (startDownloadBtn) {
+            startDownloadBtn.style.display = 'inline-flex';
+            startDownloadBtn.disabled = false;
+          }
+          if (modelDownloadProgressContainer) modelDownloadProgressContainer.style.display = 'none';
+        } else {
+          if (modelSetupBanner && !isPollingModelDownload) {
+            modelSetupBanner.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.warn("Model health check error:", e);
+      }
+    }
+
+    function showModelDownloadProgress(dlState) {
+      updateAiHeaderPill({ download_state: dlState });
+      if (modelSetupBanner) modelSetupBanner.style.display = 'flex';
+      if (startDownloadBtn) startDownloadBtn.style.display = 'none';
+      if (modelDownloadProgressContainer) modelDownloadProgressContainer.style.display = 'flex';
+
+      const pct = dlState?.percent || 0;
+      const step = dlState?.current_step || 'Downloading models...';
+
+      if (modelDownloadProgressBar) modelDownloadProgressBar.style.width = `${Math.max(5, pct)}%`;
+      if (modelDownloadPctText) modelDownloadPctText.textContent = `${pct}%`;
+      if (modelDownloadStatusText) modelDownloadStatusText.textContent = step;
+      if (modelDownloadStep) modelDownloadStep.textContent = `${pct}% complete`;
+    }
+
+    function startModelDownloadPolling() {
+      if (isPollingModelDownload) return;
+      isPollingModelDownload = true;
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/models/status');
+          if (!res.ok) return;
+          const data = await res.json();
+          const dlState = data.download_state;
+
+          if (dlState.status === 'downloading') {
+            showModelDownloadProgress(dlState);
+          } else if (dlState.status === 'complete') {
+            clearInterval(pollInterval);
+            isPollingModelDownload = false;
+            showModelDownloadProgress({ percent: 100, current_step: '✅ All essential models downloaded and ready!' });
+            updateAiHeaderPill({ all_ready: true });
+            if (modelDownloadProgressBar) modelDownloadProgressBar.style.background = '#4ade80';
+            setTimeout(() => {
+              if (modelSetupBanner) modelSetupBanner.style.display = 'none';
+              ensureModelsLoaded().then(() => refresh());
+            }, 2500);
+          } else if (dlState.status === 'error') {
+            clearInterval(pollInterval);
+            isPollingModelDownload = false;
+            updateAiHeaderPill({ all_ready: false });
+            if (modelDownloadStatusText) {
+              modelDownloadStatusText.textContent = `❌ ${dlState.error || 'Download failed'}`;
+              modelDownloadStatusText.style.color = '#f87171';
+            }
+            if (startDownloadBtn) {
+              startDownloadBtn.style.display = 'inline-flex';
+              startDownloadBtn.disabled = false;
+              startDownloadBtn.innerHTML = '<span>🔄</span> Retry Download';
+            }
+          }
+        } catch (err) {
+          console.warn("Download progress poll error:", err);
+        }
+      }, 700);
+    }
+
+    if (startDownloadBtn) {
+      startDownloadBtn.onclick = async () => {
+        startDownloadBtn.disabled = true;
+        startDownloadBtn.innerHTML = '<span>⏳</span> Starting download...';
+        try {
+          const res = await fetch('/api/models/download', { method: 'POST' });
+          const data = await res.json();
+          showModelDownloadProgress(data.download_state || { percent: 5, current_step: 'Initializing download...' });
+          startModelDownloadPolling();
+        } catch (e) {
+          alert('Failed to trigger download: ' + e.message);
+          startDownloadBtn.disabled = false;
+          startDownloadBtn.innerHTML = '<span>📥</span> Download Models (~1.8 GB)';
+        }
+      };
+    }
+
+    // Call checkModelHealth on startup
+    checkModelHealth();
+
     // Instant preview & rig status inspection when a GLB/GLTF or FBX character is chosen
     charFile.onchange = async () => {
       const file = charFile.files[0];
@@ -3101,15 +4178,16 @@
         const useGpu = autoRigGpuCheck ? autoRigGpuCheck.checked : true;
         const device = useGpu ? 'vulkan' : 'cpu';
         const deviceLabel = useGpu ? 'Vulkan GPU' : 'CPU';
+        const beams = autoRigBeamsSelect ? autoRigBeamsSelect.value : '5';
 
         autoRigBtn.disabled = true;
         const origBtnText = autoRigBtn.innerHTML;
-        autoRigBtn.innerHTML = `<span>⏳ Auto-Rigging (${deviceLabel})...</span>`;
+        autoRigBtn.innerHTML = `<span>⏳ Auto-Rigging (${deviceLabel}, ${beams}b)...</span>`;
         bakeStatus.className = 'readout progress';
-        bakeStatus.innerHTML = `Running SkinTokens neural auto-rigging on <b>${currentUploadedFileName || (file ? file.name : 'mesh')}</b> with <b>${deviceLabel}</b> acceleration...`;
+        bakeStatus.innerHTML = `Running SkinTokens neural auto-rigging on <b>${currentUploadedFileName || (file ? file.name : 'mesh')}</b> with <b>${deviceLabel}</b> (${beams} search beam${beams > 1 ? 's' : ''})...`;
 
         try {
-          let rigUrl = `/api/auto_rig?filename=${encodeURIComponent(currentUploadedFileName || file.name)}&device=${device}`;
+          let rigUrl = `/api/auto_rig?filename=${encodeURIComponent(currentUploadedFileName || file.name)}&device=${device}&beams=${beams}`;
           if (currentPreviewId) {
             rigUrl += `&preview_id=${currentPreviewId}`;
           }
@@ -3134,7 +4212,7 @@
           if (autoRigContainer) autoRigContainer.style.display = 'none';
 
           bakeStatus.className = 'readout';
-          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Auto-rigging complete in ${data.elapsed_seconds}s! Mixamo skeleton (${data.bone_count} bones) attached. Click <b>"Bake to Mesh"</b> to animate!</span>`;
+          bakeStatus.innerHTML = `<span style="color:var(--la-cyan-2);font-weight:600">✅ Auto-rigging complete in ${data.elapsed_seconds}s (${data.beams || beams} beams)! Mixamo skeleton (${data.bone_count} bones) attached. Click <b>"Bake to Mesh"</b> to animate!</span>`;
 
           bakeBtn.disabled = false;
           bakeBtn.style.animation = 'pulse 1.2s infinite';
@@ -3172,7 +4250,7 @@
       bakeStatus.textContent = `Uploading ${currentUploadedFileName || file.name} & baking animation…`;
 
       try {
-        let url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(currentUploadedFileName || file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}`;
+        let url = `/api/retarget?animation_id=${selected.id}&format=${charFormat.value}&filename=${encodeURIComponent(currentUploadedFileName || file.name)}&arm_clearance=${armClearanceDeg}&forearm_clearance=${forearmClearanceDeg}&grounding_offset=${groundOffsetCm}`;
         if (currentPreviewId) {
           url += `&preview_id=${currentPreviewId}`;
         }

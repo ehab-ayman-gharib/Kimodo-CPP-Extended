@@ -44,3 +44,4 @@ __pycache__/
 # Testing Models
 /test_models/*
 *.glb
+config.json

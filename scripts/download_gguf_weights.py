@@ -13,6 +13,27 @@ MODELS = {
     "g1-seed-v1": ("LocalAI-io/Kimodo-G1-SEED-v1-GGML", "models/kimodo-g1-seed-v1-f32.gguf"),
 }
 TEXT_REPO = "LocalAI-io/Llama-3-Kimodo-GGML"
+SKINTOKENS_REPO = "LocalAI-io/SkinTokens-GGUF"
+
+def download_skintokens(output: Path, precision: str = "F16"):
+    import shutil
+    print(f"Downloading SkinTokens {precision} weights from {SKINTOKENS_REPO}...")
+    target_dir = output / "models" / "skintokens"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = output / "models" / "_skintokens_tmp"
+    snapshot_download(
+        repo_id=SKINTOKENS_REPO,
+        local_dir=str(temp_dir),
+        allow_patterns=[f"{precision}/*", "MANIFEST.json"],
+    )
+    src_dir = temp_dir / precision
+    for fname in ["mesh-encoder.gguf", "skin-vae.gguf", "tokenrig.gguf"]:
+        src = src_dir / fname
+        dst = target_dir / fname
+        if src.is_file():
+            shutil.copy2(str(src), str(dst))
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    print("SkinTokens neural rig weights verified in models/skintokens.")
 
 def verify_manifest(manifest_path: Path, output: Path, requested_patterns: list[str]):
     root = output.resolve()
@@ -51,10 +72,12 @@ def download_model(repo: str, output: Path, allow_patterns: list[str]):
     verify_manifest(manifest_path, output, allow_patterns)
 
 def main():
-    parser = argparse.ArgumentParser(description="Download Kimodo GGUF weights")
+    parser = argparse.ArgumentParser(description="Download Kimodo & SkinTokens GGUF weights")
     parser.add_argument("--output", "-o", default=".", help="Output directory (default: current)")
     parser.add_argument("--model", "-m", action="append", choices=list(MODELS.keys()), default=[], help="Model(s) to download")
     parser.add_argument("--motion-only", action="store_true", help="Download only motion model, skip text bundle")
+    parser.add_argument("--skintokens", action="store_true", help="Download SkinTokens neural auto-rigging weights (mesh-encoder, skin-vae, tokenrig)")
+    parser.add_argument("--essential", action="store_true", help="Download all essential weights: SOMA v1.1 motion, Llama-3 text bundle, and SkinTokens")
     parser.add_argument("--all-models", action="store_true", help="Download all available motion models")
     args = parser.parse_args()
 
@@ -74,7 +97,10 @@ def main():
     if not args.motion_only:
         download_model(TEXT_REPO, out_dir, ["generated/llm2vec-text-bundle/*"])
 
-    print("\nAll weights downloaded and verified successfully!")
+    if args.skintokens or args.essential:
+        download_skintokens(out_dir)
+
+    print("\nAll requested weights downloaded and verified successfully!")
 
 if __name__ == "__main__":
     main()

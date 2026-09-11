@@ -225,13 +225,193 @@ def load_gallery():
 
 load_gallery()
 
-def worker_loop():
-    bin_path = ROOT_DIR / "build/Release/kmd-generate.exe"
-    text_bundle = ROOT_DIR / "generated/llm2vec-text-bundle"
-    dll_dir1 = ROOT_DIR / "build/bin/Release"
-    dll_dir2 = ROOT_DIR / "build/Release"
+def find_kmd_generate():
+    candidates = [
+        ROOT_DIR / "build" / "Release" / "kmd-generate.exe",
+        ROOT_DIR / "build" / "Release" / "kmd-generate",
+        ROOT_DIR / "build" / "kmd-generate",
+        ROOT_DIR / "build" / "bin" / "kmd-generate",
+        ROOT_DIR / "build" / "bin" / "Release" / "kmd-generate.exe",
+        ROOT_DIR / "build" / "bin" / "Release" / "kmd-generate",
+        ROOT_DIR / "bin" / "kmd-generate.exe",
+        ROOT_DIR / "bin" / "kmd-generate",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return c
+    import shutil
+    p = shutil.which("kmd-generate")
+    return Path(p) if p else (ROOT_DIR / "build/Release/kmd-generate.exe")
+
+def get_runtime_env():
+    dll_dirs = [
+        ROOT_DIR / "bin" / "skintokens",
+        ROOT_DIR / "bin",
+        ROOT_DIR / "build" / "bin" / "Release",
+        ROOT_DIR / "build" / "Release",
+        ROOT_DIR / "build" / "bin",
+        ROOT_DIR / "build",
+    ]
     env = os.environ.copy()
-    env["PATH"] = f"{dll_dir1};{dll_dir2};" + env.get("PATH", "")
+    lib_path_entries = [str(d) for d in dll_dirs if d.is_dir()]
+    if sys.platform == "win32":
+        env["PATH"] = os.pathsep.join(lib_path_entries + [env.get("PATH", "")])
+    elif sys.platform == "darwin":
+        env["DYLD_LIBRARY_PATH"] = os.pathsep.join(lib_path_entries + [env.get("DYLD_LIBRARY_PATH", "")])
+        env["PATH"] = os.pathsep.join(lib_path_entries + [env.get("PATH", "")])
+    else:
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(lib_path_entries + [env.get("LD_LIBRARY_PATH", "")])
+        env["PATH"] = os.pathsep.join(lib_path_entries + [env.get("PATH", "")])
+    return env
+
+_download_state = {
+    "status": "idle",  # "idle", "downloading", "complete", "error"
+    "current_step": "",
+    "percent": 0,
+    "error": None
+}
+_download_lock = threading.Lock()
+
+def _get_download_state():
+    with _download_lock:
+        return dict(_download_state)
+
+def _update_download_state(**kwargs):
+    with _download_lock:
+        _download_state.update(kwargs)
+
+def check_models_status():
+    motion_file = ROOT_DIR / "models/kimodo-soma-rp-v1.1-f32.gguf"
+    motion_ready = motion_file.is_file() and motion_file.stat().st_size > 500_000_000
+
+    text_bundle_dir = ROOT_DIR / "generated/llm2vec-text-bundle"
+    text_embed = text_bundle_dir / "embedding.gguf"
+    text_ready = text_embed.is_file() and text_embed.stat().st_size > 500_000_000
+
+    skintokens_dir = ROOT_DIR / "models/skintokens"
+    st_files = ["mesh-encoder.gguf", "skin-vae.gguf", "tokenrig.gguf"]
+    st_ready = all((skintokens_dir / f).is_file() and (skintokens_dir / f).stat().st_size > 10_000_000 for f in st_files)
+
+    missing = []
+    if not motion_ready:
+        missing.append("SOMA v1.1 Motion Model (~1.08 GB)")
+    if not text_ready:
+        missing.append("Llama-3 Text Bundle (~14.1 GB)")
+    if not st_ready:
+        missing.append("SkinTokens Neural Rig (~1.19 GB)")
+
+    return {
+        "all_ready": motion_ready and text_ready and st_ready,
+        "motion": {"ready": motion_ready, "path": str(motion_file)},
+        "text_bundle": {"ready": text_ready, "dir": str(text_bundle_dir)},
+        "skintokens": {"ready": st_ready, "dir": str(skintokens_dir)},
+        "missing": missing,
+        "download_state": _get_download_state()
+    }
+
+def start_download_task():
+    with _download_lock:
+        if _download_state["status"] == "downloading":
+            return False, "Download already in progress"
+        _download_state["status"] = "downloading"
+        _download_state["error"] = None
+        _download_state["percent"] = 5
+        _download_state["current_step"] = "Initializing download..."
+
+    def _worker():
+        try:
+            from huggingface_hub import snapshot_download
+            status = check_models_status()
+            to_download = []
+            if not status["motion"]["ready"]:
+                to_download.append("motion")
+            if not status["skintokens"]["ready"]:
+                to_download.append("skintokens")
+            if not status["text_bundle"]["ready"]:
+                to_download.append("text")
+
+            total_items = max(1, len(to_download))
+            completed = 0
+
+            # 1. Download SOMA v1.1 motion model
+            if "motion" in to_download:
+                _update_download_state(
+                    current_step="Downloading SOMA v1.1 Motion Model (~1.08 GB)...",
+                    percent=int((completed / total_items) * 90) + 5
+                )
+                print("[Downloader] Downloading SOMA v1.1 Motion Model from LocalAI-io/Kimodo-SOMA-RP-v1.1-GGML...")
+                (ROOT_DIR / "models").mkdir(parents=True, exist_ok=True)
+                snapshot_download(
+                    repo_id="LocalAI-io/Kimodo-SOMA-RP-v1.1-GGML",
+                    local_dir=str(ROOT_DIR),
+                    allow_patterns=["models/kimodo-soma-rp-v1.1-f32.gguf", "MANIFEST.json"]
+                )
+                completed += 1
+                _update_download_state(percent=int((completed / total_items) * 90) + 5)
+
+            # 2. Download SkinTokens neural rig weights
+            if "skintokens" in to_download:
+                _update_download_state(
+                    current_step="Downloading SkinTokens Neural Auto-Rig Weights (~1.19 GB)...",
+                    percent=int((completed / total_items) * 90) + 5
+                )
+                print("[Downloader] Downloading SkinTokens weights from LocalAI-io/SkinTokens-GGUF...")
+                target_dir = ROOT_DIR / "models" / "skintokens"
+                target_dir.mkdir(parents=True, exist_ok=True)
+                temp_dir = ROOT_DIR / "models" / "_skintokens_tmp"
+                snapshot_download(
+                    repo_id="LocalAI-io/SkinTokens-GGUF",
+                    local_dir=str(temp_dir),
+                    allow_patterns=["F16/*", "MANIFEST.json"]
+                )
+                src_dir = temp_dir / "F16"
+                for fname in ["mesh-encoder.gguf", "skin-vae.gguf", "tokenrig.gguf"]:
+                    src = src_dir / fname
+                    dst = target_dir / fname
+                    if src.is_file():
+                        shutil.copy2(str(src), str(dst))
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                completed += 1
+                _update_download_state(percent=int((completed / total_items) * 90) + 5)
+
+            # 3. Download Text Bundle
+            if "text" in to_download:
+                _update_download_state(
+                    current_step="Downloading Llama-3 Text Bundle (~14.1 GB)...",
+                    percent=int((completed / total_items) * 90) + 5
+                )
+                print("[Downloader] Downloading Llama-3 Text Bundle from LocalAI-io/Llama-3-Kimodo-GGML...")
+                (ROOT_DIR / "generated").mkdir(parents=True, exist_ok=True)
+                snapshot_download(
+                    repo_id="LocalAI-io/Llama-3-Kimodo-GGML",
+                    local_dir=str(ROOT_DIR),
+                    allow_patterns=["generated/llm2vec-text-bundle/*", "MANIFEST.json"]
+                )
+                completed += 1
+
+            _update_download_state(
+                status="complete",
+                percent=100,
+                current_step="All essential models downloaded and ready!"
+            )
+            print("[Downloader] All requested weights installed successfully.")
+
+        except Exception as ex:
+            print(f"[Downloader] Failed to download weights: {ex}")
+            _update_download_state(
+                status="error",
+                error=str(ex),
+                current_step=f"Download error: {str(ex)[:120]}"
+            )
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    return True, "Download started"
+
+def worker_loop():
+    bin_path = find_kmd_generate()
+    text_bundle = ROOT_DIR / "generated/llm2vec-text-bundle"
+    env = get_runtime_env()
 
     while True:
         item = None
@@ -248,71 +428,286 @@ def worker_loop():
 
         item_dir = OUTPUT_DIR / item["id"]
         item_dir.mkdir(parents=True, exist_ok=True)
-        (item_dir / "prompt.txt").write_text(item["prompt"], encoding="utf-8")
 
-        model_info = MODELS.get(item["model"])
-        if not model_info or not model_info["path"].is_file():
+        t_start = time.time()
+        print(f"\n[Worker] Starting job: {item['id']} ({item['prompt'][:40]}...)")
+        print(f"[Worker] Frames: {item['frames']}, Steps: {item['diffusion_steps']}, Seed: {item['seed']}")
+        print(f"[Worker] Binary: {bin_path}")
+
+        # Check if binary exists
+        if not bin_path.is_file():
+            print(f"[Worker] Error: Generator binary not found at {bin_path}")
             item["status"] = "failed"
-            item["error"] = f"Model {item['model']} not found at {model_info['path'] if model_info else 'unknown'}"
+            item["error"] = f"Generator binary not found at {bin_path}. Please build kimodo first (e.g. cmake --build build)."
             json_path.write_text(json.dumps(item, indent=2), encoding="utf-8")
             continue
 
-        segments = item.get("segments") or [{"prompt": item["prompt"], "frames": item["frames"]}]
-        cmd = [
-            str(bin_path),
-            str(model_info["path"]),
-            str(text_bundle),
-            "--sequence",
-            str(item.get("transition_frames", 10)),
-            str(item.get("diffusion_steps", 20)),
-            str(item.get("seed", 42)),
-            str(item_dir),
-        ]
-        for idx, seg in enumerate(segments):
-            seg_file = item_dir / f"segment-{idx+1:02d}.txt"
-            seg_file.write_text(seg["prompt"], encoding="utf-8")
-            cmd.extend([str(seg["frames"]), str(seg_file)])
+        model_key = item.get("model", "soma-rp-v1.1")
+        model_info = MODELS.get(model_key, MODELS["soma-rp-v1.1"])
+        model_path = model_info["path"]
+
+        # Check if model or text bundle is missing - auto-download on first use!
+        if not model_path.is_file() or not (text_bundle / "embedding.gguf").is_file():
+            print("[Worker] Weights missing for generation. Initiating automatic background download...")
+            item["status"] = "running"
+            item["progress"] = "Downloading missing motion/text models from HuggingFace (first-time setup)..."
+            json_path.write_text(json.dumps(item, indent=2), encoding="utf-8")
+
+            start_download_task()
+            while True:
+                dst = _get_download_state()
+                if dst["status"] == "complete":
+                    print("[Worker] Background download complete. Resuming generation.")
+                    break
+                elif dst["status"] == "error":
+                    item["status"] = "failed"
+                    item["error"] = f"Automatic download failed: {dst.get('error')}"
+                    json_path.write_text(json.dumps(item, indent=2), encoding="utf-8")
+                    break
+                time.sleep(1.0)
+
+            if item["status"] == "failed":
+                continue
+
+        prompt_file = item_dir / "prompt.txt"
+        prompt_file.write_text(item["prompt"], encoding="utf-8")
+
+        # Run kmd-generate
+        if item.get("segments"):
+            cmd = [
+                str(bin_path),
+                str(model_path),
+                str(text_bundle),
+                "--sequence",
+                str(item.get("transition_frames", 10)),
+                str(item["diffusion_steps"]),
+                str(item["seed"]),
+                str(item_dir)
+            ]
+            for idx, seg in enumerate(item["segments"]):
+                seg_prompt_file = item_dir / f"prompt_seg_{idx}.txt"
+                seg_prompt_file.write_text(seg.get("prompt", ""), encoding="utf-8")
+                cmd.extend([str(seg.get("frames", 30)), str(seg_prompt_file)])
+        else:
+            cmd = [
+                str(bin_path),
+                str(model_path),
+                str(text_bundle),
+                str(prompt_file),
+                str(item["frames"]),
+                str(item["diffusion_steps"]),
+                str(item["seed"]),
+                str(item_dir)
+            ]
+            seg_json = item_dir / "segments.json"
+            seg_data = {
+                "segments": item["segments"],
+                "transition_frames": item.get("transition_frames", 10)
+            }
+            seg_json.write_text(json.dumps(seg_data, indent=2), encoding="utf-8")
+            cmd.extend(["--segments", str(seg_json)])
 
         try:
-            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-            if proc.returncode != 0:
+            res = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if res.returncode != 0:
+                print(f"[Worker] Process failed with return code {res.returncode}")
+                print(f"[Worker] Stderr: {res.stderr}")
                 item["status"] = "failed"
-                item["error"] = proc.stderr or proc.stdout or "Process returned error"
+                item["error"] = res.stderr or "Generation failed"
             else:
-                export_skeleton_glb(item_dir, model_info["skeleton_key"])
-                item["status"] = "ready"
-                item["progress"] = ""
-        except Exception as ex:
+                print(f"[Worker] Process completed successfully in {time.time() - t_start:.2f}s")
+                build_animation_glb(item_dir)
+                item["status"] = "complete"
+                item["duration"] = round(time.time() - t_start, 2)
+                item["files"] = {
+                    "root": f"/api/animations/{item['id']}/root.f32",
+                    "rotations": f"/api/animations/{item['id']}/rotations.f32",
+                    "glb": f"/api/animations/{item['id']}/animation.glb",
+                    "glb_mixamo": f"/api/animations/{item['id']}/animation_mixamo.glb"
+                }
+        except Exception as e:
+            print(f"[Worker] Exception running generator: {e}")
             item["status"] = "failed"
-            item["error"] = str(ex)
+            item["error"] = str(e)
 
         json_path.write_text(json.dumps(item, indent=2), encoding="utf-8")
 
 threading.Thread(target=worker_loop, daemon=True).start()
 
-def find_blender():
+CONFIG_PATH = ROOT_DIR / "config.json"
+
+def get_config():
+    if CONFIG_PATH.is_file():
+        try:
+            return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+def set_config_value(key, val):
+    cfg = get_config()
+    if val is None:
+        cfg.pop(key, None)
+    else:
+        cfg[key] = val
+    try:
+        CONFIG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"[Config] Error saving config: {e}")
+
+def validate_blender(path_str):
+    if not path_str or not isinstance(path_str, str):
+        return False, None, "No path provided"
+    p = Path(path_str.strip().strip('"').strip("'"))
+    # Handle macOS .app bundle path
+    if sys.platform == "darwin" and p.suffix == ".app":
+        app_binary = p / "Contents/MacOS/Blender"
+        if app_binary.is_file():
+            p = app_binary
+    if not p.is_file():
+        # Check if it resolves via system PATH
+        p_which = shutil.which(str(p))
+        if p_which:
+            p = Path(p_which)
+        else:
+            return False, None, f"File not found: {path_str}"
+    try:
+        res = subprocess.run([str(p), "--version"], capture_output=True, text=True, timeout=5)
+        if res.returncode == 0 and "Blender" in res.stdout:
+            ver_line = res.stdout.splitlines()[0].strip()
+            return True, str(p.resolve()), ver_line
+        return False, None, f"Executed successfully but unexpected output: {res.stdout[:80]}"
+    except Exception as e:
+        return False, None, str(e)
+
+def find_blender_info():
+    # 1. Check manually saved config
+    saved_path = get_config().get("blender_path")
+    if saved_path:
+        ok, res_path, ver = validate_blender(saved_path)
+        if ok:
+            return {
+                "found": True,
+                "path": res_path,
+                "version": ver,
+                "is_manual": True
+            }
+
+    # 2. Auto-detect from system locations
     candidates = [
         Path(r"E:\Program Files\Blender Foundation\Blender 5.1\blender.exe"),
+        Path(r"C:\Program Files\Blender Foundation\Blender 5.1\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.4\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.3\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.2\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.1\blender.exe"),
         Path(r"C:\Program Files\Blender Foundation\Blender 4.0\blender.exe"),
+        Path("/Applications/Blender.app/Contents/MacOS/Blender"),
+        Path("/usr/bin/blender"),
+        Path("/usr/local/bin/blender"),
+        Path("/snap/bin/blender"),
     ]
+    p_which = shutil.which("blender")
+    if p_which:
+        candidates.append(Path(p_which))
+
     for c in candidates:
         if c.is_file():
-            return str(c)
-    import shutil
-    p = shutil.which("blender")
-    return p if p else "blender"
+            ok, res_path, ver = validate_blender(str(c))
+            if ok:
+                return {
+                    "found": True,
+                    "path": res_path,
+                    "version": ver,
+                    "is_manual": False
+                }
+
+    return {
+        "found": False,
+        "path": None,
+        "version": None,
+        "is_manual": False
+    }
+
+def find_blender():
+    info = find_blender_info()
+    return info["path"]
+
+def native_browse_blender():
+    # Try Tkinter dialog first (standard in Windows/macOS Python)
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        if sys.platform == "win32":
+            filetypes = [("Blender (blender.exe)", "blender.exe"), ("Executables (*.exe)", "*.exe"), ("All Files (*.*)", "*.*")]
+        elif sys.platform == "darwin":
+            filetypes = [("Blender App (*.app)", "*.app"), ("All Files (*)", "*")]
+        else:
+            filetypes = [("All Files (*)", "*")]
+        chosen = filedialog.askopenfilename(title="Select Blender Executable", filetypes=filetypes)
+        root.destroy()
+        if chosen:
+            return str(Path(chosen).resolve())
+    except Exception as e:
+        print(f"[Browse] Tkinter file dialog unavailable: {e}")
+
+    # Fallback on Windows: PowerShell OpenFileDialog
+    if sys.platform == "win32":
+        try:
+            ps_script = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "$d = New-Object System.Windows.Forms.OpenFileDialog; "
+                "$d.Filter = 'Blender (blender.exe)|blender.exe|Executables (*.exe)|*.exe|All Files (*.*)|*.*'; "
+                "$d.Title = 'Select Blender Executable'; "
+                "if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){ Write-Output $d.FileName }"
+            )
+            res = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps_script], capture_output=True, text=True, timeout=60)
+            if res.returncode == 0 and res.stdout.strip():
+                return str(Path(res.stdout.strip()).resolve())
+        except Exception as ex:
+            print(f"[Browse] PowerShell dialog fallback error: {ex}")
+
+    # Fallback on macOS: osascript
+    if sys.platform == "darwin":
+        try:
+            as_code = 'POSIX path of (choose file of type {"app", ""} with prompt "Select Blender application")'
+            res = subprocess.run(["osascript", "-e", as_code], capture_output=True, text=True, timeout=60)
+            if res.returncode == 0 and res.stdout.strip():
+                return str(Path(res.stdout.strip()).resolve())
+        except Exception:
+            pass
+
+    # Fallback on Linux: zenity
+    if shutil.which("zenity"):
+        try:
+            res = subprocess.run(["zenity", "--file-selection", "--title=Select Blender executable"], capture_output=True, text=True, timeout=60)
+            if res.returncode == 0 and res.stdout.strip():
+                return str(Path(res.stdout.strip()).resolve())
+        except Exception:
+            pass
+
+    return None
 
 def find_skintokens():
-    exe = ROOT_DIR / "bin" / "skintokens" / "skintokens-cli.exe"
+    candidates = [
+        ROOT_DIR / "bin" / "skintokens" / "skintokens-cli.exe",
+        ROOT_DIR / "bin" / "skintokens" / "skintokens-cli",
+        ROOT_DIR / "build" / "bin" / "skintokens-cli",
+        ROOT_DIR / "build" / "skintokens-cli",
+    ]
+    import shutil
+    p = shutil.which("skintokens-cli")
+    if p:
+        candidates.append(Path(p))
+    exe = next((c for c in candidates if c.is_file()), None)
     models = ROOT_DIR / "models" / "skintokens"
     script = ROOT_DIR / "scripts" / "convert_to_mixamo.py"
     return (
-        exe if exe.is_file() else None,
+        exe,
         models if models.is_dir() else None,
         script if script.is_file() else None
     )
@@ -324,7 +719,7 @@ def get_vulkan_env():
     if _cached_vulkan_env is not None:
         return _cached_vulkan_env.copy()
 
-    env = os.environ.copy()
+    env = get_runtime_env()
     try:
         skintokens_exe, skintokens_models, _ = find_skintokens()
         if skintokens_exe and skintokens_models:
@@ -343,9 +738,9 @@ def get_vulkan_env():
             for idx, name, vendor in devices:
                 nl = name.lower()
                 vl = vendor.lower()
-                if any(k in nl or k in vl for k in ["nvidia", "geforce", "rtx", "amd", "radeon", "discrete"]):
+                if any(k in nl or k in vl for k in ["nvidia", "geforce", "rtx", "amd", "radeon", "discrete", "apple", "m1", "m2", "m3", "m4"]):
                     best_idx = idx
-                    print(f"[Vulkan] Auto-selected discrete GPU [{best_idx}]: {name} ({vendor})")
+                    print(f"[Vulkan] Auto-selected GPU [{best_idx}]: {name} ({vendor})")
                     break
             env["GGML_VK_VISIBLE_DEVICES"] = str(best_idx)
             _cached_vulkan_env = env
@@ -538,6 +933,20 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(data)
                     return
             self.send_error(404)
+        elif url == "/api/blender":
+            info = find_blender_info()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(info).encode('utf-8'))
+            return
+        elif url == "/api/models/status":
+            info = check_models_status()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(info).encode('utf-8'))
+            return
         else:
             self.send_error(404)
 
@@ -589,6 +998,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
             preview_id = query.get("preview_id", [""])[0]
             arm_clearance = float(query.get("arm_clearance", [0.0])[0]) if "arm_clearance" in query else 0.0
             forearm_clearance = float(query.get("forearm_clearance", [0.0])[0]) if "forearm_clearance" in query else 0.0
+            grounding_offset = float(query.get("grounding_offset", [0.0])[0]) if "grounding_offset" in query else 0.0
 
             try:
                 if "application/json" in content_type:
@@ -609,6 +1019,11 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                             forearm_clearance = float(req.get("forearm_clearance", 0.0))
                         except Exception:
                             forearm_clearance = 0.0
+                    if "grounding_offset" in req:
+                        try:
+                            grounding_offset = float(req.get("grounding_offset", 0.0))
+                        except Exception:
+                            grounding_offset = 0.0
                 else:
                     # Direct binary stream upload
                     item_dir = OUTPUT_DIR / aid
@@ -659,6 +1074,12 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 out_path = item_dir / out_filename
 
                 blender_exe = find_blender()
+                if not blender_exe or not Path(blender_exe).is_file():
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Blender executable not found. Please click 'Locate Blender' in the UI to configure your Blender path."}).encode('utf-8'))
+                    return
                 bake_script = ROOT_DIR / "scripts/bake_to_character.py"
 
                 print(f"[Retarget] Running Blender: {blender_exe}")
@@ -666,6 +1087,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 print(f"[Retarget] Output:    {out_path}")
                 print(f"[Retarget] Arm Clearance:     {arm_clearance:+.1f}°")
                 print(f"[Retarget] Forearm Clearance: {forearm_clearance:+.1f}°")
+                print(f"[Retarget] Grounding Offset:  {grounding_offset:+.1f}cm")
 
                 cmd = [
                     str(blender_exe),
@@ -684,6 +1106,8 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                     cmd.extend(["--arm-clearance", str(arm_clearance)])
                 if abs(forearm_clearance) > 0.001:
                     cmd.extend(["--forearm-clearance", str(forearm_clearance)])
+                if abs(grounding_offset) > 0.001:
+                    cmd.extend(["--grounding-offset", str(grounding_offset / 100.0)])
 
                 proc = subprocess.run(cmd, capture_output=True, text=True)
                 print(f"[Retarget] Blender returncode: {proc.returncode}")
@@ -820,6 +1244,12 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 return
 
             blender_exe = find_blender()
+            if not blender_exe or not Path(blender_exe).is_file():
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Blender executable not found. Please click 'Locate Blender' in the UI to configure your Blender path."}).encode('utf-8'))
+                return
 
             if preview_id and (OUTPUT_DIR / "_preview" / preview_id).is_dir():
                 work_dir = OUTPUT_DIR / "_preview" / preview_id
@@ -850,7 +1280,16 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": f"Could not prepare input mesh GLB from {filename}."}).encode('utf-8'))
                 return
 
-            print(f"[Auto-Rig] Starting SkinTokens neural rig on {input_glb.name} (device: {device})...")
+            beams = 5
+            if "beams" in query:
+                try:
+                    b_val = int(query["beams"][0])
+                    if 1 <= b_val <= 20:
+                        beams = b_val
+                except ValueError:
+                    beams = 5
+
+            print(f"[Auto-Rig] Starting SkinTokens neural rig on {input_glb.name} (device: {device}, beams: {beams})...")
             tokens_rigged_glb = work_dir / "tokens_rigged.glb"
 
             rig_cmd = [
@@ -859,10 +1298,11 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 str(skintokens_models),
                 str(input_glb),
                 str(tokens_rigged_glb),
-                "--device", device
+                "--device", device,
+                "--beams", str(beams)
             ]
             t_start = time.time()
-            vk_env = get_vulkan_env() if device == "vulkan" else os.environ.copy()
+            vk_env = get_vulkan_env() if device == "vulkan" else get_runtime_env()
             rig_proc = subprocess.run(rig_cmd, env=vk_env, capture_output=True, text=True)
             t_elapsed = round(time.time() - t_start, 1)
             print(f"[Auto-Rig] skintokens rig finished in {t_elapsed}s (returncode: {rig_proc.returncode})")
@@ -926,6 +1366,7 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 "preview_id": work_id,
                 "is_rigged": True,
                 "bone_count": 22,
+                "beams": beams,
                 "elapsed_seconds": t_elapsed
             }).encode('utf-8'))
 
@@ -949,6 +1390,85 @@ class KimodoHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+
+        elif path == "/api/blender":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            req = json.loads(body.decode('utf-8'))
+            new_path = req.get("path", "").strip()
+            ok, res_path, ver = validate_blender(new_path)
+            if ok:
+                set_config_value("blender_path", res_path)
+                print(f"[Blender] User configured manual Blender path: {res_path} ({ver})")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "found": True,
+                    "path": res_path,
+                    "version": ver,
+                    "is_manual": True
+                }).encode('utf-8'))
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "error": f"Invalid Blender path: {ver}"
+                }).encode('utf-8'))
+
+        elif path == "/api/blender/browse":
+            print("[Blender] Opening native system file dialog to locate Blender...")
+            chosen = native_browse_blender()
+            if not chosen:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"cancelled": True}).encode('utf-8'))
+                return
+            ok, res_path, ver = validate_blender(chosen)
+            if ok:
+                set_config_value("blender_path", res_path)
+                print(f"[Blender] User selected Blender via browse dialog: {res_path} ({ver})")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "found": True,
+                    "path": res_path,
+                    "version": ver,
+                    "is_manual": True
+                }).encode('utf-8'))
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "error": f"Selected file is not a valid Blender executable: {ver}"
+                }).encode('utf-8'))
+
+        elif path == "/api/blender/reset":
+            set_config_value("blender_path", None)
+            info = find_blender_info()
+            print(f"[Blender] Reset to auto-detection: {info}")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(info).encode('utf-8'))
+
+        elif path == "/api/models/download":
+            ok, msg = start_download_task()
+            status = check_models_status()
+            self.send_response(200 if ok else 409)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "success": ok,
+                "message": msg,
+                "download_state": status["download_state"]
+            }).encode('utf-8'))
 
         elif path.startswith("/api/animations/") and path.endswith("/delete"):
             parts = path.strip("/").split("/")
