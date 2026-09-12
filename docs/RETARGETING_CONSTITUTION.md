@@ -76,10 +76,10 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 - **Problem**: Rest pose arms are angled downward at ≈ 45° - 50°. Applying SOMA's downward walking/running rotations compounds the angle to -95°, causing the arms to cross behind the back and clip through the ribs.
 - **Solution — Virtual T-Pose Lift (`Q_lift`)**:
   1. Measure the rest arm vector from shoulder to elbow:
-     $$\vec{V}_{\text{left}} = \mathbf{P}_{\text{elbow}} - \mathbf{P}_{\text{shoulder}}$$
+     $$\vec{V}_{\text{arm}} = \mathbf{P}_e - \mathbf{P}_s \quad (\mathbf{P}_e = \text{elbow}, \; \mathbf{P}_s = \text{shoulder})$$
   2. Compute the rotation quaternion lifting the rest arm to horizontal:
-     $$Q_{\text{left}} = \vec{V}_{\text{left}} \to (+1, 0, 0)$$
-     $$Q_{\text{right}} = \vec{V}_{\text{right}} \to (-1, 0, 0)$$
+     $$Q_{\text{left}} = \vec{V}_{\text{arm}} \to (+1, 0, 0)$$
+     $$Q_{\text{right}} = \vec{V}_{\text{arm}} \to (-1, 0, 0)$$
   3. Pre-multiply the rest offset by `Q_lift`:
      $$M_{\text{offset}} = M_{\text{src}}^{-1} \cdot (Q_{\text{lift}} \cdot M_{\text{tgt}})$$
 - **Result**: The motion applies relative to a virtual horizontal T-pose, allowing the arms to swing naturally beside the waist and in front of the chest.
@@ -182,11 +182,11 @@ Rig_Architectures/
 To guarantee that characters with short legs (dwarves, stylized creatures) or long legs (tall humans) remain solidly planted on the floor grid ($Z \approx 0.02\text{m} - 0.04\text{m}$) without floating or sinking:
 
 1. **Leg Length Ratio**:
-   $$s_{\text{leg}} = \frac{H_{\text{target}}}{H_{\text{soma}}} \quad \text{where } H_{\text{soma}} = 0.938\text{ m}$$
+   $$s = \frac{H_{\text{char}}}{H_{\text{ref}}} \quad \text{where } H_{\text{ref}} = 0.938\text{ m}$$
    Clamped dynamically to safe range $[0.05, 10.0]$.
 2. **Dynamic Root Translation**:
-   $$\vec{P}_{\text{root}} = \begin{bmatrix} X_{\text{rest}} + X_{\text{soma}} \cdot s_{\text{leg}} \\ Y_{\text{rest}} + Y_{\text{soma}} \cdot s_{\text{leg}} \\ Z_{\text{rest}} + (Z_{\text{soma}} - H_{\text{soma}}) \cdot s_{\text{leg}} \end{bmatrix}$$
-- At rest ($Z_{\text{soma}} = H_{\text{soma}}$), the character stands at its authentic rest elevation ($Z_{\text{rest}}$).
+   $$\vec{P} = \begin{bmatrix} X_0 + X_{\text{soma}} \cdot s \\ Y_0 + Y_{\text{soma}} \cdot s \\ Z_0 + (Z_{\text{soma}} - H_{\text{ref}}) \cdot s \end{bmatrix}$$
+- At rest ($Z_{\text{soma}} = H_{\text{ref}}$), the character stands at its authentic rest elevation ($Z_0$).
 - During jumps, walking strides, or crouches, vertical displacement scales proportionally around the character's natural stance.
 
 ---
@@ -214,7 +214,7 @@ To guarantee that characters with short legs (dwarves, stylized creatures) or lo
 | Symptom | Probable Cause | Corrective Action |
 | :--- | :--- | :--- |
 | **Arm/forearm penetrating body/torso during folds** | Upper thoracic spine bone (`Spine2` / `Spine02` / `spine_03`) unmapped; shoulder socket swung backward. | Map 3rd spine bone to `Chest` so thoracic forward flex is applied. |
-| **Character floating above floor grid** | Absolute root height applied without subtracting $H_{\text{soma}}$. | Use $\Delta Z = (Z_{\text{soma}} - H_{\text{soma}}) \cdot s_{\text{leg}}$. |
+| **Character floating above floor grid** | Absolute root height applied without subtracting $H_{\text{ref}}$. | Use $\Delta Z = (Z_{\text{soma}} - H_{\text{ref}}) \cdot s$. |
 | **Hips buckled backward, knees locked straight** | Lower spine joint (`mixamorig:Spine` or `CC_Base_Waist`) unmapped and frozen at rest. | Verify `Spine1` maps to the lowest spine bone above the hips. |
 | **Head detached from body / torn jacket sleeves on Biped** | Artificial grounding shift applied to bones while mesh remained at rest. | In `convert_biped_to_standard.py`, keep `ground_shift = (0,0,0)` for standard bipeds. |
 | **Character rotates 90° sideways during animation** | Biped rest pose yaw offset improperly compensated. | Check Euler $Z$ rotation; apply $R_{\text{yaw}}$ only on rotated kitbashed bipeds. |
