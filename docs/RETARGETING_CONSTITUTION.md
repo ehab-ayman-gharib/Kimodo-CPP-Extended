@@ -51,14 +51,14 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 | **Unreal Engine Mannequin** (`SK_Mannequin` / UE4 & UE5) | **100% Native Preservation** (`pelvis`, `spine_01-03`, `thigh_l`, `upperarm_l`) | Drops directly into Unreal Engine 4 & 5 animation blueprints and IK retargeters. |
 | **Character Creator** (CC3 / CC4 / Daz) | **100% Native Preservation** (`CC_Base_Hip`, `CC_Base_Waist`, `CC_Base_Spine01-02`) | Native compatibility with Character Creator 4, iClone, and Daz Studio. |
 | **Mixamo & Standard Humanoid** | **100% Native Preservation** (`mixamorig:Hips` or custom prefix) | Instant drop-in for Unity Humanoid, Blender, Godot, and WebGL viewers. |
-| **Custom-Prefixed Humanoids** (`Bear_Big`, Asset Packs) | **100% Native Preservation** (`<Prefix>_LeftArm`, `<Prefix>_Spine`) | Preserves original bone hierarchies while matching standardized joint endpoints. |
+| **Custom-Prefixed Humanoids** (Custom Namespaces, Asset Packs) | **100% Native Preservation** (`<Prefix>_LeftArm`, `<Prefix>_Spine`) | Preserves original bone hierarchies while matching standardized joint endpoints. |
 | **3ds Max Biped** (`Bip001`, `Bip<Name>`) | **Modernized to Standard Meters** | Converted to standard GLB to fix legacy 2000s centimeter roll & Inverse Bind Matrix bugs. |
 
 ---
 
 ## 3. Rig-Specific Constitutions & Approaches
 
-### A. Mixamo Standard T-Pose (`Young-Pharaoh`, `Remy`, Standard FBX/GLB)
+### A. Mixamo Standard T-Pose (Standard Humanoid FBX/GLB)
 - **Bone Convention**: `mixamorig:Hips`, `mixamorig:Spine`, `mixamorig:Spine1`, `mixamorig:Spine2`, `mixamorig:LeftArm`, `mixamorig:LeftUpLeg`, etc.
 - **Local Axis Layout**: Local $+Y$ points along the bone length (longitudinal), $+Z$ is the forward bend normal.
 - **3-Stage Spinal Chain**:
@@ -72,7 +72,7 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### B. Mixamo A-Pose (`Bastet-Animated-PBR.glb`)
+### B. Mixamo A-Pose (Angled Rest Pose Humanoid GLB/FBX)
 - **Problem**: Rest pose arms are angled downward at $\approx 45^\circ - 50^\circ$. Applying SOMA's downward walking/running rotations compounds the angle to $-95^\circ$, causing the arms to cross behind the back and clip through the ribs.
 - **Solution — Virtual T-Pose Lift ($Q_{\text{lift}}$)**:
   1. Measure the rest arm vector from shoulder to elbow:
@@ -86,17 +86,17 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### C. Autodesk 3ds Max Character Studio Biped (`Ahmed`, `Glow_Idle`, `Trump`, `Caterin`, `EMERSO`)
-- **Signature**: Bones starting with `Bip` (e.g. `Bip001 Pelvis`, `Bip01 Pelvis`, `BipTrump Pelvis`, `BipHero Spine`), parented to a $0.01$-scale `Point001` or `<name>_rigCharRoot` Empty.
+### C. Autodesk 3ds Max Character Studio Biped (Standard & Kitbashed Bipeds)
+- **Signature**: Bones starting with `Bip` (e.g. `Bip001 Pelvis`, `Bip01 Pelvis`, `BipHero Pelvis`, `BipCharacter Spine`), parented to a $0.01$-scale `Point001` or `<name>_rigCharRoot` Empty.
 - **Problem**: 3ds Max Bipeds use a centimeter coordinate system with $+X$ pointing along the bone length. Exporting directly to glTF invalidates the mesh Inverse Bind Matrices ($IBM$), resulting in mesh stretching between $-120\text{m}$ and $+40\text{m}$.
 - **Solution (`scripts/convert_biped_to_standard.py`)**:
-  1. **Universal Biped Prefix Resolution**: Strips custom prefixes (`BipTrump Pelvis` $\to$ `Bip001 Pelvis` $\to$ `mixamorig:Hips`) via `get_biped_mixamo_name()` to handle any custom-named Character Studio biped.
+  1. **Universal Biped Prefix Resolution**: Strips custom prefixes (`BipCustom Pelvis` $\to$ `Bip001 Pelvis` $\to$ `mixamorig:Hips`) via `get_biped_mixamo_name()` to handle any custom-named Character Studio biped.
   2. **Standard vs. Rotated/Kitbashed Biped Branching**:
-     - **Standard 3ds Max Bipeds (`ez <= 0.5 rad`, e.g. `Glow_Idle.fbx`, `Ahmed_Bin_Maged_Character.fbx`, `Trump-LowPoly.fbx`, `Caterin_NEW_Armature.fbx`)**:
+     - **Standard 3ds Max Bipeds (`ez <= 0.5 rad`)**:
        - `ground_shift = (0, 0, 0)` (**Zero offset — 100% native coordinate preservation**). Prevents floating/detached heads and torn jacket sleeves.
        - `R_yaw = Identity(4)`.
        - Vertices scaled by $0.01$ with zero artificial shifts.
-     - **Rotated / Kitbashed Bipeds (`ez > 0.5 rad`, e.g. `EMERSO.fbx`)**:
+     - **Rotated / Kitbashed Bipeds (`ez > 0.5 rad`)**:
        - `R_yaw = Rotation(yaw_corr, 'Z')` to align model facing forward along $-Y$.
        - `ground_shift` applied symmetrically to **both** skeleton joints and mesh vertices to keep head and body synchronized.
   3. **Standard Basis Transformation**:
@@ -110,7 +110,7 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### D. Reallusion Character Creator 3 & 4 (`CC3_Base_Plus.Fbx`, `man3.Fbx`, `Neutral_M.Fbx`, `Neutral_F.Fbx`, `Test_toon.Fbx`, `Toon Neutral_M.Fbx`)
+### D. Reallusion Character Creator 3 & 4 (Realistic, Stylized & Toon Characters)
 - **Signature**: Bones starting with `CC_Base_` (`CC_Base_Hip`, `CC_Base_Waist`, `CC_Base_Spine01`, `CC_Base_Spine02`, `CC_Base_L_Clavicle`, etc.).
 - **Critical Root Topology Rule**:
   - `CC_Base_Hip` is the **true root joint** (parent of both the spine and the legs via `CC_Base_Pelvis`).
@@ -133,7 +133,7 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### E. Unreal Engine Mannequins (`SK_Mannequin` / UE4 & UE5, `cgtrader_optimized_SKM_XSENS_Mannequin.fbx`)
+### E. Unreal Engine Mannequins (`SK_Mannequin` / UE4 & UE5 Standard & Custom Mannequins)
 - **Signature**: Bones using Unreal conventions (`pelvis`, `spine_01`, `spine_02`, `spine_03`, `clavicle_l`, `upperarm_l`, `lowerarm_l`, `hand_l`, `thigh_l`, `calf_l`, `foot_l`, `ball_l`).
 - **Solution — Dedicated `UE_MANNEQUIN_MAPPING`**:
   - `Hips` $\to$ `pelvis`
@@ -154,44 +154,25 @@ Our pipeline follows a strict **Native Rig Preservation** philosophy wherever po
 
 ---
 
-### F. Custom-Prefixed Models (`Bear_Big.fbx`, Asset Store Packs)
-- **Signature**: Standard humanoid hierarchies preceded by arbitrary model namespaces (e.g. `Bear_Mama_LeftUpLeg`, `Character1_RightArm`, `Hero_Spine`).
+### F. Custom-Prefixed Models (Custom Namespaces & Asset Store Packs)
+- **Signature**: Standard humanoid hierarchies preceded by arbitrary model namespaces (e.g. `NPC_LeftUpLeg`, `Character1_RightArm`, `Hero_Spine`).
 - **Solution — Prefix-Agnostic Matching**:
-  - The resolver strips any leading namespace (`Bear_Mama_`, `Character1_`, `mixamorig:`) and matches against standardized suffixes (`leftupleg`, `leftleg`, `leftarm`, `rightarm`, etc.).
+  - The resolver strips any leading namespace (`NPC_`, `Character1_`, `mixamorig:`) and matches against standardized suffixes (`leftupleg`, `leftleg`, `leftarm`, `rightarm`, etc.).
   - Priority matching ensures longer names (`LeftForeArm`) resolve before shorter substrings (`LeftArm`).
 
 ---
 
-## 4. Verified Rig Test Suite & Curated Directory Layout
+## 4. Verified Rig Architectures & Pipeline Categories
 
-The repository maintains an organized test model suite under `Test_Models/` categorized by rig architecture:
+The retargeting pipeline is comprehensively verified across all primary industry humanoid rig architectures:
 
 ```text
-Test_Models/
-├── 3dsMax_Biped/
-│   ├── Ahmed_Bin_Maged_Character.fbx    [Verified: Standard Biped, Head & Dagger Intact]
-│   ├── Caterin_NEW_Armature.fbx         [Verified: Standard Biped Armature]
-│   ├── Glow_Idle.fbx                    [Verified: Standard Biped, Zero Torn Sleeves]
-│   └── Trump-LowPoly.fbx                [Verified: Custom Prefix BipTrump, 0 Yaw Flips]
-├── Character_Creator/
-│   ├── CC3_Base_Plus.Fbx                [Verified: Dual-Hip, 3-Bone Spine, Arm Clearance]
-│   ├── man3.Fbx                         [Verified: CC3 Man, Native Preservation]
-│   ├── Neutral_F.Fbx                    [Verified: CC4 Female Base]
-│   ├── Neutral_M.Fbx                    [Verified: CC4 Male Base]
-│   ├── Test_toon.Fbx                    [Verified: CC Stylized Toon]
-│   └── Toon Neutral_M.Fbx               [Verified: CC Toon Male Base]
-├── Mixamo/
-│   ├── Bastet-Animated-PBR.glb          [Verified: A-Pose Q_lift Angular Compensation]
-│   ├── EMERSO_std_interm.glb            [Verified: Kitbashed Biped Converted to Standard]
-│   ├── Remy.fbx                         [Verified: Classic Mixamo Humanoid FBX]
-│   ├── Young-Pharaoh-Animated-PBR.glb   [Verified: Mixamo T-Pose PBR GLB]
-│   ├── Young-Pharaoh-skintokens.fbx     [Verified: Mixamo SkinTokens FBX]
-│   └── Zombie-Pharaoh-Animated-PBR.glb  [Verified: Mixamo Stylized Creature GLB]
-├── Unreal_Mannequin/
-│   ├── SKM_XSENS_Mannequin.fbx          [Verified: UE Mannequin, 22 Native Bones]
-│   └── cgtrader_optimized_...fbx       [Verified: Optimized UE Mannequin]
-└── Custom_Rigs/
-    └── Bear_Big.fbx                     [Verified: Custom Namespace Stripping]
+Rig_Architectures/
+├── 3dsMax_Biped/          [Standard & Kitbashed Bipeds, Bip001 / Bip<Custom> Rigs]
+├── Character_Creator/     [CC3 / CC4 Dual-Hip, 3-Bone Spine & Toon Characters]
+├── Mixamo/                [Standard Humanoid T-Pose & Angled A-Pose Rigs]
+├── Unreal_Mannequin/      [SK_Mannequin UE4 / UE5 Humanoid Hierarchies]
+└── Custom_Rigs/           [Custom Namespace Prefixes & Third-Party DCC Rigs]
 ```
 
 ---
@@ -241,5 +222,5 @@ To guarantee that characters with short legs (dwarves, stylized creatures) or lo
 | **Mesh explodes / Spikes / Stretched underground** | FBX parent scale hierarchy desyncing Inverse Bind Matrices on glTF export. | Route model through `scripts/convert_biped_to_standard.py`. |
 | **Animation plays in fast-forward (e.g. 1.98s)** | FBX scene metadata altered Blender's `scene.render.fps`. | Verify `render.fps = 30` lock is executed after importing target. |
 | **Legs/Arms moving in reverse phase** | Generic substring matching swapped Left and Right limbs. | Ensure strict `left`/`l_` vs `right`/`r_` separation in bone resolver. |
-| **Lower body static / not animating on Biped** | Custom Biped name (e.g. `BipTrump`) not recognized by default `Bip001` check. | Use `get_biped_mixamo_name()` and prefix-agnostic `bip` detection. |
+| **Lower body static / not animating on Biped** | Custom Biped name (e.g. `BipCustom`) not recognized by default `Bip001` check. | Use `get_biped_mixamo_name()` and prefix-agnostic `bip` detection. |
 | **404 error loading baked / preview model** | Space in filename was URL-encoded (`%20`) without decoding in backend server. | Ensure `urllib.parse.unquote()` is called across all API endpoints in `launch_gui.py`. |
