@@ -12,7 +12,7 @@ Kimodo-CPP Extended builds upon [`kimodo.cpp`](https://github.com/localai-org/ki
 Bake AI motion directly onto custom character meshes (`.fbx`, `.glb`, `.gltf`) using background Blender automation without altering original bone hierarchies:
 - **Unreal Engine Mannequin (`SK_Mannequin` / UE4 & UE5)**: 100% native preservation (`pelvis`, `spine_01-03`, `clavicle_l`, `upperarm_l`, `thigh_l`, `calf_l`). Assets drop directly into Unreal animation blueprints with zero retargeting setup.
 - **Reallusion Character Creator (CC3 & CC4)**: Native preservation of `CC_Base_Hip`, `CC_Base_Waist`, and `CC_Base_Spine01-02` with upper thoracic forward flex to eliminate arm/torso penetration.
-- **Mixamo & Standard Humanoid**: In-place retargeting for T-Pose and A-Pose meshes with virtual angular compensation ($Q_{\text{lift}}$) and name-prefix agnosticism (`Hero_`, `Character_`).
+- **Mixamo & Standard Humanoid**: In-place retargeting for T-Pose and A-Pose meshes with virtual angular compensation (`Q_lift`) and name-prefix agnosticism (`Hero_`, `Character_`).
 - **Autodesk 3ds Max Character Studio Biped**: Automatic centimeter-to-meter normalization and IBM de-skewing with zero ground-shift on classic bipeds (`Bip001`, `Bip<Name>`).
 
 ### 2. Neural Auto-Rigging with SkinTokens AI
