@@ -37,7 +37,7 @@ Inspect character skinning directly in Three.js inside the browser:
 - **Live Clearance Sliders**: Non-destructive Arm, Forearm, and Floor Grounding sliders updating character poses instantly without re-generating motion.
 - **AI Engines & Models HUD**: Live stage-header indicator displaying status of Motion Synthesis (SOMA), Text Conditioning (Llama-3), Neural Rigging (SkinTokens), GPU backend (Vulkan), and Blender.
 - **Blender Auto-Detection & Relocation**: Automatic discovery across standard program directories on Windows/Linux, with a native file browser to relocate or reset custom Blender paths.
-- **360° Turntable Video Recorder**: High-speed turntable rotation with automatic canvas capture to export looping demonstration videos.
+- **Universal 360° Turntable Video Recorder**: Automatic canvas capture and orbiting video capture for any loaded model (unrigged meshes, static rest-pose previews, neural weight heatmaps, or baked animations) with 1-click download in MP4/WebM.
 - **Asset Management & Explorer Integration**: One-click deletion of past generations and direct "Browse folder" shortcut in native Windows Explorer.
 
 ---

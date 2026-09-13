@@ -1493,7 +1493,7 @@
             <button id="cancelTurntableBtn" type="button" style="background:transparent;border:0;color:var(--la-muted);cursor:pointer;font-size:0.75rem;padding:2px 6px;border-radius:4px">✕ Cancel</button>
           </div>
 
-          <!-- Floating Turntable Controls Directly on 3D Character View Render (Only visible when animation is baked) -->
+          <!-- Floating Turntable Controls Directly on 3D Character View Render (Available for all loaded models) -->
           <div id="meshViewportTurntableBar" class="mesh-viewport-turntable-bar" style="display:none">
             <button id="viewportDownloadTurntableBtn" type="button" class="btn-turntable-download"
               title="Record and download a clean 360° orbiting turntable video">
@@ -3264,7 +3264,7 @@
         if (typeof resetTurntableVideoState === 'function') resetTurntableVideoState();
         const hasBakedAnim = isBaked || (charName && charName.toLowerCase().includes('animated'));
         isCharacterAnimationBaked = Boolean(hasBakedAnim);
-        showTurntableButtons(isCharacterAnimationBaked);
+        showTurntableButtons(true);
         if (unloadCharBtn) unloadCharBtn.style.display = 'inline-flex';
       };
 
@@ -3379,7 +3379,6 @@
         bakeStatus.innerHTML = `<span style="color:var(--la-cyan)">ℹ️ Character ready. Click <b>"Bake to Mesh"</b> to animate with this motion!</span>`;
         bakeBtn.style.animation = 'pulse 1.2s infinite';
         isCharacterAnimationBaked = false;
-        showTurntableButtons(false);
       } else {
         if (currentCharacterModel) {
           threeScene.remove(currentCharacterModel);
@@ -4322,10 +4321,10 @@
         viewportTopControls.style.display = currentCharacterModel ? 'flex' : 'none';
       }
       if (armClearanceControl) {
-        armClearanceControl.style.display = currentCharacterModel ? 'flex' : 'none';
+        armClearanceControl.style.display = (currentCharacterModel && (currentLeftArmBone || currentRightArmBone)) ? 'flex' : 'none';
       }
       if (meshViewportTurntableBar) {
-        meshViewportTurntableBar.style.display = (show && isCharacterAnimationBaked) ? 'flex' : 'none';
+        meshViewportTurntableBar.style.display = (show && currentCharacterModel) ? 'flex' : 'none';
       }
     }
 
@@ -4366,8 +4365,8 @@
 
     async function startTurntableRecording() {
       if (isRecordingTurntable) return;
-      if (!isCharacterAnimationBaked || !currentCharacterModel) {
-        alert("Please bake an animation onto your character first to record a turntable video.");
+      if (!currentCharacterModel) {
+        alert("Please load or preview a 3D character model first to record a turntable video.");
         return;
       }
 
@@ -4404,30 +4403,37 @@
         }
       };
 
-      // Determine exact animation length so the 360 rotation is consistent with animation cycle
+      // Determine exact animation length so the 360 rotation is consistent with animation cycle.
+      // For unrigged models or static preview (rest pose), provide a smooth 4.0s showcase rotation.
+      let hasAnim = false;
       let animDuration = 0;
       if (currentAction && currentAction.getClip() && currentAction.getClip().duration > 0.05) {
         animDuration = currentAction.getClip().duration;
+        hasAnim = true;
       } else if (currentGltfClips && clipSelect && currentGltfClips[Number(clipSelect.value)]?.duration > 0.05) {
         animDuration = currentGltfClips[Number(clipSelect.value)].duration;
-      } else if (selected && selected.frames && selected.frames > 0) {
+        hasAnim = true;
+      } else if (isCharacterAnimationBaked && selected && selected.frames && selected.frames > 0) {
         animDuration = selected.frames / 30.0;
+        hasAnim = true;
       }
-      const duration = Math.max(animDuration, 1.0);
+      const spinDuration = hasAnim ? Math.max(animDuration, 2.5) : 4.0;
 
-      // Reset animation playback to beginning (frame 0) so turntable video starts right at the beginning
-      frame = 0;
-      playbackBlend = 0;
-      last = performance.now();
-      if (threeMixer) {
-        syncCharacterAnimation(0);
+      // If animated, reset animation playback to beginning (frame 0) so turntable video starts at the beginning
+      if (hasAnim) {
+        frame = 0;
+        playbackBlend = 0;
+        last = performance.now();
+        if (threeMixer) {
+          syncCharacterAnimation(0);
+        }
+        if (currentAction) {
+          currentAction.time = 0;
+        }
+        playing = true;
+        const playBtn = document.querySelector('#play');
+        if (playBtn) playBtn.textContent = 'Pause';
       }
-      if (currentAction) {
-        currentAction.time = 0;
-      }
-      playing = true;
-      const playBtn = document.querySelector('#play');
-      if (playBtn) playBtn.textContent = 'Pause';
 
       // Compute true character bounds from animated bones & meshes
       currentCharacterModel.updateMatrixWorld(true);
@@ -4462,8 +4468,21 @@
       const camY = targetFocus.y + baseDistance * Math.sin(elevationRad);
       const orbitRadius = baseDistance * Math.cos(elevationRad);
 
-      // Authentic front view angle computed directly from character skeleton
-      const startAngle = getCharacterForwardAngle(currentCharacterModel);
+      // Authentic front view angle:
+      // If skeleton bones exist, compute authentic forward angle from hip/shoulder vectors.
+      // If unrigged (no bones detected), start from current camera horizontal angle so the turntable
+      // smoothly orbits from the exact angle the user has framed in the viewport!
+      let hasBones = false;
+      currentCharacterModel.traverse(node => { if (node.isBone) hasBones = true; });
+
+      let startAngle = getCharacterForwardAngle(currentCharacterModel);
+      if (!hasBones) {
+        const dx = threeCamera.position.x - threeControls.target.x;
+        const dz = threeCamera.position.z - threeControls.target.z;
+        if (dx * dx + dz * dz > 0.0001) {
+          startAngle = Math.atan2(dx, dz);
+        }
+      }
 
       // Hide ground grid for clean studio turntable recording
       const wasGridVisible = threeGridHelper ? threeGridHelper.visible : true;
@@ -4513,10 +4532,12 @@
         threeControls.update();
         threeRenderer.render(threeScene, threeCamera);
 
-        // Reset animation timer so playback resumes smoothly in viewer
-        last = performance.now();
-        frame = 0;
-        playbackBlend = 0;
+        // Reset animation timer so playback resumes smoothly in viewer if animated
+        if (hasAnim) {
+          last = performance.now();
+          frame = 0;
+          playbackBlend = 0;
+        }
 
         if (!success) {
           if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
@@ -4572,9 +4593,8 @@
         }
       }
 
-      // 1.0s front hero still buffer: holds steady on the front face/chest before rotation begins
+      // 1.0s front hero still buffer: holds steady on the front face/mesh before rotation begins
       const leadInDuration = 1.0;
-      const spinDuration = duration;
       const totalDuration = leadInDuration + spinDuration;
 
       function stepTurntable(now) {
@@ -4589,7 +4609,7 @@
         let animProgress = 0.0;
 
         if (elapsed < leadInDuration) {
-          // 1.0s Front Hero Still Buffer: camera holds steady on front face, animation holds frame 0
+          // 1.0s Front Hero Still Buffer: camera holds steady on front face/mesh
           rotProgress = 0.0;
           animProgress = 0.0;
         } else {
@@ -4599,7 +4619,7 @@
           animProgress = rotProgress;
         }
 
-        // Continuous smooth 360 rotation that keeps turning until animation ends
+        // Continuous smooth 360 rotation that keeps turning until rotation ends
         const curAngle = startAngle + rotProgress * Math.PI * 2;
         threeCamera.position.x = targetFocus.x + orbitRadius * Math.sin(curAngle);
         threeCamera.position.z = targetFocus.z + orbitRadius * Math.cos(curAngle);
@@ -4607,13 +4627,15 @@
         threeCamera.lookAt(targetFocus);
         threeControls.target.copy(targetFocus);
 
-        // Keep character animation time frame-perfect in sync with turntable progress
-        const animTime = animProgress * spinDuration;
-        if (threeMixer) {
-          syncCharacterAnimation(animTime);
-        }
-        if (selected && selected.frames) {
-          frame = Math.min(selected.frames - 1, Math.floor(animProgress * selected.frames));
+        // Keep character animation time frame-perfect in sync with turntable progress if animated
+        if (hasAnim) {
+          const animTime = animProgress * spinDuration;
+          if (threeMixer) {
+            syncCharacterAnimation(animTime);
+          }
+          if (isCharacterAnimationBaked && selected && selected.frames) {
+            frame = Math.min(selected.frames - 1, Math.floor(animProgress * selected.frames));
+          }
         }
 
         // Render current 3D frame into canvas stream
@@ -4645,8 +4667,8 @@
     if (viewportDownloadTurntableBtn) {
       viewportDownloadTurntableBtn.onclick = () => {
         if (isRecordingTurntable) return;
-        if (!isCharacterAnimationBaked || !currentCharacterModel) {
-          alert("Please bake an animation onto your character first to record and download a 360° turntable video.");
+        if (!currentCharacterModel) {
+          alert("Please load or preview a 3D character model first to record and download a 360° turntable video.");
           return;
         }
         if (latestTurntableUrl && latestTurntableFilename) {
@@ -4660,8 +4682,8 @@
     if (viewportTurntableBtn) {
       viewportTurntableBtn.onclick = () => {
         if (isRecordingTurntable) return;
-        if (!isCharacterAnimationBaked || !currentCharacterModel) {
-          alert("Please bake an animation onto your character first to record a turntable video.");
+        if (!currentCharacterModel) {
+          alert("Please load or preview a 3D character model first to record a turntable video.");
           return;
         }
         startTurntableRecording();
